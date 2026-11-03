@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>신 43년(15차) 인 맞음 확인 시험 | Examen de Verificación</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --gray-800: #1e293b;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* 초기 언어 선택 화면 */
+    #lang-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      color: #fff;
+      text-align: center;
+    }
+
+    .lang-card {
+      background: #ffffff;
+      color: var(--gray-800);
+      padding: 40px 32px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      max-width: 460px;
+      width: 100%;
+    }
+
+    .lang-card h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: var(--gray-800);
+    }
+
+    .lang-card p {
+      font-size: 0.95rem;
+      color: var(--gray-600);
+      margin-bottom: 28px;
+    }
+
+    .lang-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .lang-btn {
+      padding: 18px 24px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .lang-btn.es {
+      background: #fff;
+      color: var(--primary);
+    }
+
+    .lang-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+    }
+
+    /* 시험 메인 화면 */
+    #app-screen {
+      display: none;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+    }
+
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      background: #fff;
+      padding: 16px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .title-area h2 {
+      font-size: 1.2rem;
+      color: var(--gray-800);
+    }
+
+    .title-area span {
+      font-size: 0.85rem;
+      color: var(--gray-600);
+    }
+
+    .controls-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mode-select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--gray-300);
+      font-size: 0.85rem;
+      background: var(--gray-50);
+      cursor: pointer;
+    }
+
+    .btn-outline {
+      padding: 8px 14px;
+      border: 1px solid var(--gray-300);
+      background: #fff;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--gray-600);
+      transition: all 0.15s;
+    }
+
+    .btn-outline:hover {
+      background: var(--gray-100);
+      color: var(--gray-800);
+    }
+
+    /* 회차 탭 버튼 */
+    .round-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .round-btn {
+      padding: 12px 8px;
+      border: 1px solid var(--gray-200);
+      background: #fff;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .round-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .round-info-banner {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      color: #1e40af;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* 문제 카드 */
+    .question-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .question-card.correct {
+      border-color: var(--success);
+    }
+
+    .question-card.wrong {
+      border-color: var(--danger);
+    }
+
+    .q-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .q-badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .q-badge.verse {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .q-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 16px;
+      white-space: pre-line;
+    }
+
+    .sub-input-group {
+      margin-bottom: 12px;
+    }
+
+    .sub-label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+    }
+
+    .answer-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      resize: vertical;
+      min-height: 48px;
+      transition: border-color 0.15s;
+    }
+
+    .answer-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .q-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .btn-check-single {
+      padding: 8px 16px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--gray-800);
+    }
+
+    .btn-check-single:hover {
+      background: var(--gray-200);
+    }
+
+    /* 개별 채점 결과 박스 */
+    .feedback-box {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .feedback-box.correct {
+      display: block;
+      background: var(--success-bg);
+      color: #14532d;
+      border: 1px solid #86efac;
+    }
+
+    .feedback-box.wrong {
+      display: block;
+      background: var(--danger-bg);
+      color: #7f1d1d;
+      border: 1px solid #fca5a5;
+    }
+
+    .model-answer {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(0,0,0,0.15);
+      font-weight: 600;
+      white-space: pre-line;
+    }
+
+    /* 하단 전체 채점 바 */
+    .bottom-submit-area {
+      background: #fff;
+      padding: 20px 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .score-display {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--gray-800);
+    }
+
+    .btn-primary {
+      padding: 14px 28px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    @media (max-width: 600px) {
+      .round-tabs {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+      }
+      .round-btn {
+        font-size: 0.8rem;
+        padding: 10px 4px;
+      }
+      .question-card {
+        padding: 18px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. 초기 언어 선택 화면 -->
+  <div id="lang-screen">
+    <div class="lang-card">
+      <h1>신 43년(15차) 인 맞음 확인 시험</h1>
+      <p>Examen de Verificación del Ser Sellado del Año 43 (15.º)<br/>언어를 선택해 주세요 / Seleccione su idioma</p>
+      <div class="lang-btn-group">
+        <button class="lang-btn" onclick="startApp('ko')">한국어</button>
+        <button class="lang-btn es" onclick="startApp('es')">Español</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 시험 화면 -->
+  <div id="app-screen">
+    <div class="top-bar">
+      <div class="title-area">
+        <h2 id="ui-title">신 43년(15차) 인 맞음 확인 시험 (B유형)</h2>
+        <span id="ui-subtitle">범위: 복습, 계 21장, 핵심 성구</span>
+      </div>
+      <div class="controls-area">
+        <select id="grading-mode" class="mode-select">
+          <option value="standard" id="opt-standard">표준 채점 (띄어쓰기·어미 허용)</option>
+          <option value="strict" id="opt-strict">엄격 채점 (토씨 100% 일치)</option>
+        </select>
+        <button class="btn-outline" id="btn-change-lang" onclick="goHome()">언어 변경 / Idioma</button>
+      </div>
+    </div>
+
+    <!-- 상단 1~5회차 버튼 -->
+    <div class="round-tabs" id="round-tabs"></div>
+
+    <!-- 회차 설명 배너 및 문제 다시 섞기 버튼 -->
+    <div class="round-info-banner">
+      <span id="round-desc"></span>
+      <button class="btn-outline" id="btn-reshuffle" onclick="loadRound(currentRound)">🔄 다시 섞기 / 초기화</button>
+    </div>
+
+    <!-- 문제 리스트 영역 -->
+    <div id="questions-container"></div>
+
+    <!-- 전체 채점 및 결과 -->
+    <div class="bottom-submit-area">
+      <div class="score-display" id="total-score-text">채점 전</div>
+      <button class="btn-primary" id="btn-grade-all" onclick="gradeAll()">전체 채점하기</button>
+    </div>
+  </div>
+
+  <script>
+    let currentLang = 'ko';
+    let currentRound = 1;
+    let activeQuestions = [];
+
+    // UI 다국어 텍스트 (콜롬비아/중남미 표준 스페인어 반영)
+    const i18n = {
+      ko: {
+        title: "신 43년(15차) 인 맞음 확인 시험 (◆ B유형 ◆)",
+        subtitle: "범위: 복습, 계 21장, 핵심 성구",
+        optStandard: "표준 채점 (의미·핵심어 중심)",
+        optStrict: "엄격 채점 (토씨까지 완전 일치)",
+        changeLang: "언어 변경 (Idioma)",
+        reshuffle: "🔄 문제 다시 뽑기 / 초기화",
+        gradeAll: "전체 채점하기",
+        checkSingle: "이 문제 확인",
+        beforeGrade: "답안을 입력한 후 채점 버튼을 눌러주세요.",
+        roundNames: ["1회차", "2회차", "3회차", "4회차", "5회차"],
+        roundDescs: {
+          1: "1회차: 10번 핵심 성구(계 8:3~4) 암송 테스트입니다. (총 1문항)",
+          2: "2회차: 1번 성구(계 8:3~4) + 1, 2, 3번 필수 문제입니다. (총 4문항)",
+          3: "3회차: 1번 성구(계 8:3~4) + 4, 5, 6번 필수 + 1~3번 중 랜덤 2문제입니다. (총 6문항)",
+          4: "4회차: 1번 성구(계 8:3~4) + 7, 8, 9번 필수 + 1~6번 중 랜덤 2문제입니다. (총 6문항)",
+          5: "5회차: 1번 성구(계 8:3~4) + 1~9번 전체 중 랜덤 5문제입니다. (총 6문항)"
+        },
+        qOrderLabel: (idx, origId) => origId === 10 ? `문제 ${idx} [핵심 성구 - 원래 10번]` : `문제 ${idx} [원래 ${origId}번 문제]`,
+        placeholder: "답안을 정확하게 입력하세요...",
+        correctMsg: "✅ 정답입니다! (통과)",
+        wrongMsg: "❌ 오답입니다. 누락된 핵심어나 표현을 확인하세요.",
+        modelAnswerLabel: "모범 답안:",
+        similarityLabel: "일치율:",
+        missingKeywordsLabel: "누락된 핵심어:",
+        totalScore: (passed, total) => `통과 문항: ${passed} / ${total}문항 (${Math.round((passed/total)*100)}점)`
+      },
+      es: {
+        title: "Examen de Verificación del Ser Sellado del Año 43 (15.º) - Tipo B",
+        subtitle: "Contenido: Repaso, Ap 21, versículo clave",
+        optStandard: "Modo Estándar (Sentido y palabras clave)",
+        optStrict: "Modo Estricto (Exactitud total)",
+        changeLang: "Cambiar idioma (한국어)",
+        reshuffle: "🔄 Reiniciar / Mezclar preguntas",
+        gradeAll: "Calificar todo el examen",
+        checkSingle: "Verificar respuesta",
+        beforeGrade: "Escribe tus respuestas y presiona el botón para calificar.",
+        roundNames: ["Ronda 1", "Ronda 2", "Ronda 3", "Ronda 4", "Ronda 5"],
+        roundDescs: {
+          1: "Ronda 1: Prueba únicamente del versículo clave (Ap 8:3-4). (1 pregunta)",
+          2: "Ronda 2: 1.º Versículo clave (Ap 8:3-4) + Preguntas 1, 2 y 3. (4 preguntas en total)",
+          3: "Ronda 3: 1.º Versículo clave + Preguntas 4, 5 y 6 + 2 preguntas al azar de la 1 a la 3. (6 en total)",
+          4: "Ronda 4: 1.º Versículo clave + Preguntas 7, 8 y 9 + 2 preguntas al azar de la 1 a la 6. (6 en total)",
+          5: "Ronda 5: 1.º Versículo clave + 5 preguntas al azar entre la 1 y la 9. (6 en total)"
+        },
+        qOrderLabel: (idx, origId) => origId === 10 ? `Pregunta ${idx} [Versículo Clave - N.º 10]` : `Pregunta ${idx} [Pregunta original N.º ${origId}]`,
+        placeholder: "Escribe tu respuesta aquí...",
+        correctMsg: "✅ ¡Correcto! (Aprobado)",
+        wrongMsg: "❌ Incorrecto. Revisa las palabras clave y la redacción exacta.",
+        modelAnswerLabel: "Respuesta correcta:",
+        similarityLabel: "Similitud:",
+        missingKeywordsLabel: "Palabras clave faltantes:",
+        totalScore: (passed, total) => `Preguntas aprobadas: ${passed} de ${total} (${Math.round((passed/total)*100)} pts)`
+      }
+    };
+
+    // 문제 데이터베이스 (한국어 & 스페인어)
+    // 각 문항은 세부 파트(parts)로 구성되어 채점 정확도를 높임
+    // keywords 배열의 각 원소는 동의어/대체 표현 그룹(OR 조건)이며, 모든 그룹이 포함되어야 통과(AND 조건)
+    const questionDB = {
+      ko: {
+        1: {
+          id: 1,
+          question: "계 20장은 천 년 안의 사건과 천 년 후의 사건으로 나누어지는데, 천 년 안에 있게 되는 사건의 핵심을 증거 성구와 함께 쓰시오. [10점]",
+          parts: [
+            {
+              label: "첫 번째 사건 및 증거 성구",
+              answer: "용을 무저갱에 가둠, 계 20:1~3",
+              keywords: [["용"], ["무저갱"], ["가둠", "가두", "가둔"], ["20:1", "20장1"], ["3"]]
+            },
+            {
+              label: "두 번째 사건 및 증거 성구",
+              answer: "영육이 하나되는 첫째 부활, 계 20:4~6",
+              keywords: [["영육", "영과육"], ["하나"], ["첫째부활"], ["20:4", "20장4"], ["6"]]
+            }
+          ]
+        },
+        2: {
+          id: 2,
+          question: "천 년 후에 있게 되는 사건의 핵심을 증거 성구와 함께 쓰시오. [10점]",
+          parts: [
+            {
+              label: "핵심 사건 및 증거 성구",
+              answer: "심판, 영생과 영벌, 계 20:7~15",
+              keywords: [["심판"], ["영생"], ["영벌"], ["20:7", "20장7"], ["15"]]
+            }
+          ]
+        },
+        3: {
+          id: 3,
+          question: "계 20장, 용이 잡힌 후 보좌들 위에 앉아 심판하는 권세자들은 누구인가? [10점]",
+          parts: [
+            {
+              label: "답",
+              answer: "예수님의 영⋅육 12제자들",
+              keywords: [["예수님", "예수"], ["영육", "영과육"], ["12제자", "열두제자"]]
+            }
+          ]
+        },
+        4: {
+          id: 4,
+          question: "성경 66권 중 가장 중대한 예언은 ①무엇이며, 그중에서도 ②몇 장의 내용이 가장 중대하고, 그 이유는 ③무엇인가? [10점(1개당 3점, 기본점수 1점)]",
+          parts: [
+            {
+              label: "① 가장 중대한 예언",
+              answer: "요한계시록",
+              keywords: [["요한계시록", "계시록"]]
+            },
+            {
+              label: "② 가장 중대한 장",
+              answer: "계 21장",
+              keywords: [["21장", "계21"]]
+            },
+            {
+              label: "③ 그 이유",
+              answer: "하나님의 목적인 새 하늘 새 땅 창조에 대한 약속이기 때문",
+              keywords: [["하나님"], ["목적"], ["새하늘새땅"], ["창조"], ["약속"]]
+            }
+          ]
+        },
+        5: {
+          id: 5,
+          question: "계 21장의 제목은 ①무엇이며, 핵심 내용은 ②무엇인가? [10점(1개당 5점)]",
+          parts: [
+            {
+              label: "① 계 21장의 제목",
+              answer: "약속한 새 하늘 새 땅 신천지",
+              keywords: [["약속"], ["새하늘새땅"], ["신천지"]]
+            },
+            {
+              label: "② 핵심 내용",
+              answer: "하나님과 천국이 신천지에 임해 오심으로 신천지인에게 영생이 이루어지는 것",
+              keywords: [["하나님"], ["천국"], ["신천지"], ["임해", "임하", "임함"], ["영생"], ["이루어", "이뤄"]]
+            }
+          ]
+        },
+        6: {
+          id: 6,
+          question: "‘계시록의 완성’은 몇 장의 무슨 일인가? [10점]",
+          parts: [
+            {
+              label: "답",
+              answer: "계 21장의 하나님과 천국이 신천지에 임함",
+              keywords: [["21장", "계21"], ["하나님"], ["천국"], ["신천지"], ["임함", "임하", "임해"]]
+            }
+          ]
+        },
+        7: {
+          id: 7,
+          question: "계 21:24에 ‘만국이 빛 가운데 다닌다’는 것은 누가 어디서 나오는 무엇대로 행한다는 것인가? [10점]",
+          parts: [
+            {
+              label: "답",
+              answer: "모든 교회가 거룩한 성에서 나오는 진리의 말씀대로 행한다는 것",
+              keywords: [["모든교회"], ["거룩한성"], ["진리의말씀", "진리말씀"], ["행한다", "행함", "행하는"]]
+            }
+          ]
+        },
+        8: {
+          id: 8,
+          question: "계 21:25에 거룩한 성에 ‘밤이 없다’는 의미는 무엇인가? [10점]",
+          parts: [
+            {
+              label: "답",
+              answer: "말씀에 무지한 자가 없다",
+              keywords: [["말씀"], ["무지한자", "무지한사람"], ["없다", "없는것"]]
+            }
+          ]
+        },
+        9: {
+          id: 9,
+          question: "생명책에 기록된 자만이 거룩한 성 천국에 들어간다(계 21:27)라고 한 이 ‘생명책’은 무엇인가? [10점]",
+          parts: [
+            {
+              label: "답",
+              answer: "천국 호적 곧 이긴자가 있는 신천지 12지파의 교적부",
+              keywords: [["천국호적"], ["이긴자"], ["신천지"], ["12지파", "열두지파"], ["교적부"]]
+            }
+          ]
+        },
+        10: {
+          id: 10,
+          question: "계 8:3~4을 쓰시오. [10점(1구절당 5점)]",
+          parts: [
+            {
+              label: "3절",
+              answer: "또 다른 천사가 와서 제단 곁에 서서 금 향로를 가지고 많은 향을 받았으니 이는 모든 성도의 기도들과 합하여 보좌 앞 금단에 드리고자 함이라",
+              keywords: [["다른천사"], ["제단곁"], ["금향로"], ["많은향"], ["모든성도의기도"], ["보좌앞금단"], ["드리고자함이라"]]
+            },
+            {
+              label: "4절",
+              answer: "향연이 성도의 기도와 함께 천사의 손으로부터 하나님 앞으로 올라가는지라",
+              keywords: [["향연"], ["성도의기도"], ["천사의손으로부터"], ["하나님앞으로"], ["올라가는지라"]]
+            }
+          ]
+        }
+      },
+
+      es: {
+        1: {
+          id: 1,
+          question: "El capítulo 20 del Apocalipsis se divide en eventos que ocurren dentro de los mil años y eventos que ocurren después de los mil años. Describa los eventos clave que ocurren dentro de los mil años, citando las Escrituras que los respaldan. [10 puntos]",
+          parts: [
+            {
+              label: "Primer evento y cita bíblica",
+              answer: "El dragón es arrojado al abismo — Ap 20:1-3",
+              keywords: [["dragon"], ["arrojado", "lanzado", "encerrado"], ["abismo"], ["20:1"], ["3"]]
+            },
+            {
+              label: "Segundo evento y cita bíblica",
+              answer: "La primera resurrección, en la que el espíritu y el cuerpo se unen — Ap 20:4-6",
+              keywords: [["primeraresurreccion"], ["espiritu"], ["cuerpo"], ["unen"], ["20:4"], ["6"]]
+            }
+          ]
+        },
+        2: {
+          id: 2,
+          question: "Describa los eventos clave que ocurren después de los mil años, citando las Escrituras que los respaldan. [10 puntos]",
+          parts: [
+            {
+              label: "Respuesta y cita bíblica",
+              answer: "El juicio, la vida eterna y el castigo eterno — Ap 20:7-15",
+              keywords: [["juicio"], ["vidaeterna"], ["castigoeterno"], ["20:7"], ["15"]]
+            }
+          ]
+        },
+        3: {
+          id: 3,
+          question: "Apocalipsis, capítulo 20: ¿Quiénes son las personas con autoridad que se sientan en tronos y juzgan después de que el dragón es capturado? [10 puntos]",
+          parts: [
+            {
+              label: "Respuesta",
+              answer: "Los doce discípulos de Jesús, en espíritu y cuerpo",
+              keywords: [["docediscipulos", "12discipulos"], ["jesus"], ["espiritu"], ["cuerpo"]]
+            }
+          ]
+        },
+        4: {
+          id: 4,
+          question: "① ¿Cuál es la profecía más importante entre los 66 libros de la Biblia y ② qué capítulo es lo más importante y ③ por qué? [10 puntos (3 puntos por cada uno, 1 punto de base)]",
+          parts: [
+            {
+              label: "① La profecía más importante",
+              answer: "Libro del Apocalipsis",
+              keywords: [["apocalipsis"]]
+            },
+            {
+              label: "② Capítulo más importante",
+              answer: "Ap 21",
+              keywords: [["21"]]
+            },
+            {
+              label: "③ ¿Por qué?",
+              answer: "Porque es una promesa del propósito de Dios de crear un cielo nuevo y una tierra nueva.",
+              keywords: [["promesa"], ["proposito"], ["dios"], ["crear"], ["cielonuevo"], ["tierranueva"]]
+            }
+          ]
+        },
+        5: {
+          id: 5,
+          question: "① ¿Cuál es el título de Ap 21 y ② cuál es el contenido principal? [10 puntos (5 puntos cada uno)]",
+          parts: [
+            {
+              label: "① Título de Ap 21",
+              answer: "Shincheonji, El Nuevo Cielo y la Nueva Tierra Prometidos",
+              keywords: [["shincheonji"], ["nuevocielo", "cielonuevo"], ["nuevatierra", "tierranueva"], ["prometido", "prometidos"]]
+            },
+            {
+              label: "② Contenido principal",
+              answer: "Como resultado de la llegada de Dios y el cielo a Shincheonji, la vida eterna se hace realidad para la gente de Shincheonji",
+              keywords: [["dios"], ["cielo"], ["shincheonji"], ["vidaeterna"], ["realidad"]]
+            }
+          ]
+        },
+        6: {
+          id: 6,
+          question: "¿Cuál es «el cumplimiento del Apocalipsis»? [10 puntos]",
+          parts: [
+            {
+              label: "Respuesta",
+              answer: "Dios y el cielo vienen a Shincheonji en Ap 21",
+              keywords: [["dios"], ["cielo"], ["vienen", "llegan"], ["shincheonji"], ["21"]]
+            }
+          ]
+        },
+        7: {
+          id: 7,
+          question: "“Las naciones andarán a su luz” en Ap 21:24 significa ¿quién actúa según lo que sale de dónde? [10 puntos]",
+          parts: [
+            {
+              label: "Respuesta",
+              answer: "Todas las iglesias actúan según la palabra de verdad que sale de la Ciudad Santa",
+              keywords: [["todaslasiglesias"], ["actuan"], ["palabradeverdad"], ["ciudadsanta"]]
+            }
+          ]
+        },
+        8: {
+          id: 8,
+          question: "¿Qué significa “no habrá noche” en la Ciudad Santa en Apocalipsis 21:25? [10 puntos]",
+          parts: [
+            {
+              label: "Respuesta",
+              answer: "No hay nadie ignorante en la palabra",
+              keywords: [["nadie"], ["ignorante"], ["palabra"]]
+            }
+          ]
+        },
+        9: {
+          id: 9,
+          question: "¿Qué es este “libro de la vida” en el que solo aquellos cuyos nombres estén escritos en él entrarán en la Ciudad Santa (Ap 21:27)? [10 puntos]",
+          parts: [
+            {
+              label: "Respuesta",
+              answer: "El registro del cielo, es decir, el registro de la iglesia de Shincheonji, las 12 tribus donde el que vence está",
+              keywords: [["registrodelcielo"], ["registrodelaiglesia"], ["shincheonji"], ["12tribus", "docetribus"], ["elquevence"]]
+            }
+          ]
+        },
+        10: {
+          id: 10,
+          question: "Escriba Apocalipsis 8:3–4. [10 puntos (5 puntos por cada versículo)]",
+          parts: [
+            {
+              label: "Versículo 3",
+              answer: "Otro ángel vino entonces y se paró ante el altar, con un incensario de oro; y se le dio mucho incienso para añadirlo a las oraciones de todos los santos, sobre el altar de oro que estaba delante del trono.",
+              keywords: [["otroangel"], ["altar"], ["incensariodeoro"], ["muchoincienso"], ["oracionesdetodoslossantos"], ["altardeoro"], ["delantedeltrono"]]
+            },
+            {
+              label: "Versículo 4",
+              answer: "Y de la mano del ángel subió a la presencia de Dios el humo del incienso con las oraciones de los santos.",
+              keywords: [["manodelangel"], ["subio"], ["presenciadedios"], ["humodelincienso"], ["oracionesdelossantos"]]
+            }
+          ]
+        }
+      }
+    };
+
+    // 배열에서 n개 랜덤 추출
+    function pickRandom(arr, count) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy.slice(0, count);
+    }
+
+    // 회차별 출제 문제 번호 구성
+    function getQuestionIdsForRound(round) {
+      // 모든 회차의 첫 번째 문제는 항상 10번 성구
+      if (round === 1) {
+        return [10];
+      } else if (round === 2) {
+        return [10, 1, 2, 3];
+      } else if (round === 3) {
+        const rand2 = pickRandom([1, 2, 3], 2);
+        return [10, 4, 5, 6, ...rand2];
+      } else if (round === 4) {
+        const rand2 = pickRandom([1, 2, 3, 4, 5, 6], 2);
+        return [10, 7, 8, 9, ...rand2];
+      } else if (round === 5) {
+        const rand5 = pickRandom([1, 2, 3, 4, 5, 6, 7, 8, 9], 5);
+        return [10, ...rand5];
+      }
+      return [10];
+    }
+
+    function startApp(lang) {
+      currentLang = lang;
+      document.getElementById('lang-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      updateStaticUIText();
+      renderRoundTabs();
+      loadRound(1);
+    }
+
+    function goHome() {
+      document.getElementById('app-screen').style.display = 'none';
+      document.getElementById('lang-screen').style.display = 'flex';
+    }
+
+    function updateStaticUIText() {
+      const t = i18n[currentLang];
+      document.getElementById('ui-title').textContent = t.title;
+      document.getElementById('ui-subtitle').textContent = t.subtitle;
+      document.getElementById('opt-standard').textContent = t.optStandard;
+      document.getElementById('opt-strict').textContent = t.optStrict;
+      document.getElementById('btn-change-lang').textContent = t.changeLang;
+      document.getElementById('btn-reshuffle').textContent = t.reshuffle;
+      document.getElementById('btn-grade-all').textContent = t.gradeAll;
+    }
+
+    function renderRoundTabs() {
+      const tabsEl = document.getElementById('round-tabs');
+      tabsEl.innerHTML = '';
+      const names = i18n[currentLang].roundNames;
+      for (let r = 1; r <= 5; r++) {
+        const btn = document.createElement('button');
+        btn.className = `round-btn ${r === currentRound ? 'active' : ''}`;
+        btn.textContent = names[r - 1];
+        btn.onclick = () => loadRound(r);
+        tabsEl.appendChild(btn);
+      }
+    }
+
+    function loadRound(round) {
+      currentRound = round;
+      renderRoundTabs();
+      const t = i18n[currentLang];
+      document.getElementById('round-desc').textContent = t.roundDescs[round];
+      document.getElementById('total-score-text').textContent = t.beforeGrade;
+
+      const qIds = getQuestionIdsForRound(round);
+      activeQuestions = qIds.map(id => questionDB[currentLang][id]);
+
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      activeQuestions.forEach((qObj, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.id = `q-card-${idx}`;
+
+        const isVerse = qObj.id === 10;
+        let partsHTML = '';
+        qObj.parts.forEach((part, pIdx) => {
+          partsHTML += `
+            <div class="sub-input-group">
+              <label class="sub-label">${part.label}</label>
+              <textarea
+                class="answer-input"
+                id="input-${idx}-${pIdx}"
+                rows="${isVerse ? 3 : 2}"
+                placeholder="${t.placeholder}"
+              ></textarea>
+            </div>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="q-header">
+            <span class="q-badge ${isVerse ? 'verse' : ''}">
+              ${t.qOrderLabel(idx + 1, qObj.id)}
+            </span>
+          </div>
+          <div class="q-title">${qObj.question}</div>
+          ${partsHTML}
+          <div class="q-actions">
+            <button class="btn-check-single" onclick="gradeSingleQuestion(${idx})">${t.checkSingle}</button>
+          </div>
+          <div class="feedback-box" id="feedback-${idx}"></div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // 문자열 정규화: 공백, 특수문자 제거 및 스페인어 악센트 통일
+    function normalizeText(str) {
+      return str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // 스페인어 강세 제거 후 비교
+        .replace(/[\s,.\-~—:⋅·;'"“”‘’()\[\]¡!¿?]/g, "");
+    }
+
+    // 레벤슈타인 편집 거리 기반 문장 유사도 계산 (0 ~ 1)
+    function getSimilarity(s1, s2) {
+      if (s1 === s2) return 1.0;
+      const len1 = s1.length;
+      const len2 = s2.length;
+      if (len1 === 0 || len2 === 0) return 0.0;
+
+      const dp = Array.from({ length: len1 + 1 }, () => new Array(len2 + 1).fill(0));
+      for (let i = 0; i <= len1; i++) dp[i][0] = i;
+      for (let j = 0; j <= len2; j++) dp[0][j] = j;
+
+      for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+          const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      const maxLen = Math.max(len1, len2);
+      return (maxLen - dp[len1][len2]) / maxLen;
+    }
+
+    // 파트별 채점 함수
+    function evaluatePart(userRaw, partObj, mode) {
+      const normUser = normalizeText(userRaw);
+      const normModel = normalizeText(partObj.answer);
+
+      if (!normUser) {
+        return { passed: false, similarity: 0, missing: partObj.keywords.map(g => g[0]) };
+      }
+
+      const similarity = getSimilarity(normUser, normModel);
+
+      // 엄격 모드: 공백/문장부호 제외 100% 글자 일치 필요
+      if (mode === 'strict') {
+        return {
+          passed: normUser === normModel,
+          similarity: Math.round(similarity * 100),
+          missing: []
+        };
+      }
+
+      // 표준 모드: 모든 핵심 키워드 그룹 통과 + 전체 문장 유사도 78% 이상 (또는 짧은 답안은 키워드 100% + 유사도 72% 이상)
+      const missing = [];
+      for (const kwGroup of partObj.keywords) {
+        const matched = kwGroup.some(kw => normUser.includes(normalizeText(kw)));
+        if (!matched) {
+          missing.push(kwGroup[0]);
+        }
+      }
+
+      const minSim = normModel.length <= 10 ? 0.70 : 0.78;
+      const passed = missing.length === 0 && similarity >= minSim;
+
+      return {
+        passed,
+        similarity: Math.round(similarity * 100),
+        missing
+      };
+    }
+
+    function gradeSingleQuestion(qIdx) {
+      const qObj = activeQuestions[qIdx];
+      const mode = document.getElementById('grading-mode').value;
+      const t = i18n[currentLang];
+
+      let allPartsPassed = true;
+      let totalSim = 0;
+      let missingList = [];
+
+      qObj.parts.forEach((part, pIdx) => {
+        const userVal = document.getElementById(`input-${qIdx}-${pIdx}`).value;
+        const res = evaluatePart(userVal, part, mode);
+        if (!res.passed) allPartsPassed = false;
+        totalSim += res.similarity;
+        if (res.missing.length > 0) {
+          missingList.push(...res.missing);
+        }
+      });
+
+      const avgSim = Math.round(totalSim / qObj.parts.length);
+      const card = document.getElementById(`q-card-${qIdx}`);
+      const fb = document.getElementById(`feedback-${qIdx}`);
+
+      card.classList.remove('correct', 'wrong');
+      fb.classList.remove('correct', 'wrong');
+
+      const modelText = qObj.parts
+        .map(p => `${p.label ? `[${p.label}] ` : ''}${p.answer}`)
+        .join('\n');
+
+      let extraInfo = `<div style="margin-top:4px;font-size:0.82rem;">${t.similarityLabel} <strong>${avgSim}%</strong>`;
+      if (missingList.length > 0 && mode === 'standard') {
+        extraInfo += ` | ${t.missingKeywordsLabel} <strong>${missingList.join(', ')}</strong>`;
+      }
+      extraInfo += `</div>`;
+
+      if (allPartsPassed) {
+        card.classList.add('correct');
+        fb.classList.add('correct');
+        fb.innerHTML = `
+          <div><strong>${t.correctMsg}</strong></div>
+          ${extraInfo}
+          <div class="model-answer">${t.modelAnswerLabel}\n${modelText}</div>
+        `;
+      } else {
+        card.classList.add('wrong');
+        fb.classList.add('wrong');
+        fb.innerHTML = `
+          <div><strong>${t.wrongMsg}</strong></div>
+          ${extraInfo}
+          <div class="model-answer">${t.modelAnswerLabel}\n${modelText}</div>
+        `;
+      }
+
+      return allPartsPassed;
+    }
+
+    function gradeAll() {
+      let passedCount = 0;
+      for (let i = 0; i < activeQuestions.length; i++) {
+        if (gradeSingleQuestion(i)) {
+          passedCount++;
+        }
+      }
+      const t = i18n[currentLang];
+      document.getElementById('total-score-text').textContent =
+        t.totalScore(passedCount, activeQuestions.length);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "신 43년(16차) 인 맞음 확인 시험 | Examen de Verificación (16.º)",
+  "description": "신 43년(16차) 인 맞음 확인 시험 (복습, 계 22장, 핵심 성구) 한국어 및 스페인어 요일별 회차 학습·자동 채점 웹 애플리케이션",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
