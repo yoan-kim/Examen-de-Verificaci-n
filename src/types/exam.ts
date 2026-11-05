@@ -1,6 +1,6 @@
 export type Language = 'ko' | 'es';
 export type RoundNumber = 1 | 2 | 3 | 4 | 5;
-export type ActiveTab = RoundNumber | 'mock';
+export type ActiveTab = RoundNumber | 'mock' | 'notes';
 
 export interface QuestionPart {
   id: string;

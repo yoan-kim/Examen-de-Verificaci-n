@@ -32,7 +32,15 @@ export interface UILocalization {
   changeLangBtn: string;
   resetBtn: string;
   gradeAllBtn: string;
+  gradingLoadingBtn: string;
   checkSingleBtn: string;
+  soundOnLabel: string;
+  soundOffLabel: string;
+  advancedStudyOnLabel: string;
+  advancedStudyOffLabel: string;
+  advancedStudyBannerTitle: string;
+  advancedStudyBannerDesc: string;
+  perfectCelebrationText: string;
   beforeGradeText: string;
   gradingRuleSummary: string;
   roundNames: Record<RoundNumber, string>;
@@ -75,6 +83,15 @@ export interface UILocalization {
   postGradeNoteHeader: string;
   postGradeNoNoteYet: string;
   goToNotesTabBtn: string;
+  backToExamTabBtn: string;
+  notesFilterAll: string;
+  notesFilterWrittenOnly: string;
+  notesCountSummary: (writtenCount: number, totalCount: number) => string;
+  notesEmptyFilteredTitle: string;
+  notesEmptyFilteredDesc: string;
+  showAnswerInNoteToggle: string;
+  hideAnswerInNoteToggle: string;
+  clearSingleNoteBtn: string;
   // Version Switcher (bottom-right) strings
   versionSwitcherLabel: string;
   versionSwitcherModalTitle: string;
@@ -91,7 +108,16 @@ export const i18n: Record<Language, UILocalization> = {
     changeLangBtn: '언어 선택 화면으로',
     resetBtn: '답안 초기화',
     gradeAllBtn: '전체 채점하기',
+    gradingLoadingBtn: '채점 중...',
     checkSingleBtn: '이 문제 채점',
+    soundOnLabel: '효과음 켜짐',
+    soundOffLabel: '효과음 꺼짐',
+    advancedStudyOnLabel: '고급학습기능 켜짐',
+    advancedStudyOffLabel: '고급학습기능',
+    advancedStudyBannerTitle: '고급학습기능 (문제별 암기팁 노트) 활성화됨',
+    advancedStudyBannerDesc:
+      '문제를 공부하며 떠오른 암기법이나 핵심 요점을 각 문항 아래의 노트 칸에 기록해 보세요. 작성한 모든 노트는 [노트 모아보기] 탭에서 한눈에 볼 수 있습니다.',
+    perfectCelebrationText: '축하합니다! 이번 회차의 모든 문제를 완벽하게 맞추셨습니다!',
     beforeGradeText: '답안을 작성한 뒤 채점 버튼을 눌러주세요.',
     gradingRuleSummary:
       '채점 기준: 핵심 성구는 띄어쓰기 무관 토씨 100% 일치 · 일반 문제는 핵심 단어 포함 시 정답 인정',
@@ -103,7 +129,7 @@ export const i18n: Record<Language, UILocalization> = {
       5: '5회차(금)',
     },
     mockTabName: '모의시험',
-    notesTabName: '노트',
+    notesTabName: '노트 모아보기',
     questionBadge: (orderIdx, origId, points, isVerse, hidePoints) => {
       if (hidePoints) {
         return isVerse
@@ -149,17 +175,28 @@ export const i18n: Record<Language, UILocalization> = {
       hidePoints
         ? `채점 결과: 총 ${totalCount}문제 중 ${passedCount}문제 정답`
         : `총점: ${earnedPoints}점 / ${maxPoints}점 (완전 통과: ${passedCount} / ${totalCount}문항)`,
-    personalNoteTitle: '나만의 이해 · 암기 노트',
+    personalNoteTitle: '암기팁 · 학습 노트',
     personalNotePlaceholder:
-      '이 문제를 잘 이해하고 외우기 위한 개인 팁, 핵심 키워드, 연상법 등을 자유롭게 적어보세요 (자동 저장됩니다)...',
+      '이 문항을 공부하며 생각난 암기팁, 앞글자 연상법, 핵심 키워드 등을 자유롭게 기록하세요 (자동 저장)...',
     personalNoteSavedBadge: '자동 저장됨',
-    personalNoteEmptyHint: '아직 작성된 노트가 없습니다.',
+    personalNoteEmptyHint: '아직 작성된 암기팁 노트가 없습니다.',
     openOrEditNoteBtn: '내 노트 열람 / 편집',
     hideNoteEditorBtn: '노트 편집 닫기',
     postGradeNoteHeader: '내 학습 노트 팁',
     postGradeNoNoteYet:
       '이 문제에 작성된 개인 노트가 없습니다. 오른쪽 버튼을 눌러 암기 팁을 바로 메모해 보세요.',
-    goToNotesTabBtn: '노트 탭에서 전체 보기',
+    goToNotesTabBtn: '노트 모아보기 탭으로 이동',
+    backToExamTabBtn: '시험 문제 화면으로 돌아가기',
+    notesFilterAll: '전체 문항 노트',
+    notesFilterWrittenOnly: '작성한 노트만 보기',
+    notesCountSummary: (writtenCount, totalCount) =>
+      `총 ${totalCount}문항 중 ${writtenCount}개 문항에 암기팁 노트가 작성되었습니다.`,
+    notesEmptyFilteredTitle: '아직 작성된 암기팁 노트가 없습니다.',
+    notesEmptyFilteredDesc:
+      '문제를 풀면서 암기팁을 기록하거나, 아래 버튼을 눌러 전체 문항을 보며 바로 노트를 작성해 보세요.',
+    showAnswerInNoteToggle: '모범 답안 함께 보기',
+    hideAnswerInNoteToggle: '모범 답안 숨기기',
+    clearSingleNoteBtn: '노트 비우기',
     versionSwitcherLabel: '차수 변경',
     versionSwitcherModalTitle: '시험 차수(버전) 선택',
     versionLatestTag: '최신 기본',
@@ -173,7 +210,18 @@ export const i18n: Record<Language, UILocalization> = {
     changeLangBtn: 'Cambiar idioma',
     resetBtn: 'Reiniciar respuestas',
     gradeAllBtn: 'Calificar todo el examen',
+    gradingLoadingBtn: 'Calificando...',
     checkSingleBtn: 'Verificar esta pregunta',
+    soundOnLabel: 'Sonido activado',
+    soundOffLabel: 'Sonido silenciado',
+    advancedStudyOnLabel: 'Estudio avanzado activo',
+    advancedStudyOffLabel: 'Estudio avanzado',
+    advancedStudyBannerTitle:
+      'Modo de Estudio Avanzado (Notas de memorización por pregunta) activado',
+    advancedStudyBannerDesc:
+      'Anote libremente consejos de memorización, palabras clave o ideas útiles debajo de cada pregunta mientras estudia. Puede ver todas sus notas juntas en la pestaña [Mis Notas].',
+    perfectCelebrationText:
+      '¡Felicidades! ¡Ha respondido correctamente todas las preguntas de esta ronda!',
     beforeGradeText:
       'Escriba sus respuestas y presione el botón para calificar.',
     gradingRuleSummary:
@@ -186,7 +234,7 @@ export const i18n: Record<Language, UILocalization> = {
       5: 'Ronda 5 (Vie)',
     },
     mockTabName: 'Simulacro',
-    notesTabName: 'Notas',
+    notesTabName: 'Mis Notas',
     questionBadge: (orderIdx, origId, points, isVerse, hidePoints) => {
       if (hidePoints) {
         return isVerse
@@ -233,17 +281,28 @@ export const i18n: Record<Language, UILocalization> = {
       hidePoints
         ? `Resultado: ${passedCount} de ${totalCount} preguntas correctas`
         : `Puntaje total: ${earnedPoints} / ${maxPoints} puntos (Preguntas completas: ${passedCount} de ${totalCount})`,
-    personalNoteTitle: 'Mi Nota de Comprensión y Estudio',
+    personalNoteTitle: 'Nota de consejo y memorización',
     personalNotePlaceholder:
-      'Escriba aquí sus propios apuntes, palabras clave o consejos para comprender y recordar mejor esta pregunta (se guarda automáticamente)...',
+      'Escriba aquí sus consejos de memorización, palabras clave o asociaciones para recordar mejor esta pregunta (guardado automático)...',
     personalNoteSavedBadge: 'Guardado automático',
-    personalNoteEmptyHint: 'Aún no hay notas escritas.',
+    personalNoteEmptyHint: 'Aún no hay notas escritas para esta pregunta.',
     openOrEditNoteBtn: 'Ver / Editar mi nota',
     hideNoteEditorBtn: 'Cerrar editor de nota',
     postGradeNoteHeader: 'Mi Nota de Estudio Personal',
     postGradeNoNoteYet:
       'No hay notas registradas para esta pregunta. Presione el botón para agregar un consejo de estudio.',
-    goToNotesTabBtn: 'Ver todas en la pestaña Notas',
+    goToNotesTabBtn: 'Ver todas en Mis Notas',
+    backToExamTabBtn: 'Volver a las preguntas del examen',
+    notesFilterAll: 'Todas las preguntas',
+    notesFilterWrittenOnly: 'Solo con notas escritas',
+    notesCountSummary: (writtenCount, totalCount) =>
+      `Notas escritas en ${writtenCount} de ${totalCount} preguntas en total.`,
+    notesEmptyFilteredTitle: 'Todavía no hay notas de estudio escritas.',
+    notesEmptyFilteredDesc:
+      'Agregue consejos de memorización mientras estudia las preguntas o presione el botón de abajo para ver todas las preguntas.',
+    showAnswerInNoteToggle: 'Mostrar respuestas correctas',
+    hideAnswerInNoteToggle: 'Ocultar respuestas correctas',
+    clearSingleNoteBtn: 'Borrar nota',
     versionSwitcherLabel: 'Cambiar edición',
     versionSwitcherModalTitle: 'Seleccionar edición del examen',
     versionLatestTag: 'Más reciente',

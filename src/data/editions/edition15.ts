@@ -1,4 +1,4 @@
-import { ExamEdition, RoundNumber } from '../types/exam';
+import { ExamEdition, RoundNumber } from '../../types/exam';
 
 function pickRandom(arr: number[], count: number): number[] {
   const copy = [...arr];
