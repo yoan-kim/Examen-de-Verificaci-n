@@ -185,7 +185,7 @@ export const i18n: Record<Language, UILocalization> = {
     postGradeNoteHeader: '내 학습 노트 팁',
     postGradeNoNoteYet:
       '이 문제에 작성된 개인 노트가 없습니다. 오른쪽 버튼을 눌러 암기 팁을 바로 메모해 보세요.',
-    goToNotesTabBtn: '노트 모아보기 탭으로 이동',
+    goToNotesTabBtn: '노트 탭에서 전체 보기',
     backToExamTabBtn: '시험 문제 화면으로 돌아가기',
     notesFilterAll: '전체 문항 노트',
     notesFilterWrittenOnly: '작성한 노트만 보기',

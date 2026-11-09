@@ -89,6 +89,18 @@ export default function App() {
   const [notesFilter, setNotesFilter] = useState<'all' | 'written'>('all');
   const [showAnswersInNotes, setShowAnswersInNotes] = useState<boolean>(true);
 
+  // Track which question IDs have their inline note editor open (strictly 1 box at a time)
+  const [openNoteEditors, setOpenNoteEditors] = useState<
+    Record<number, boolean>
+  >({});
+
+  const toggleNoteEditor = (questionId: number) => {
+    setOpenNoteEditors((prev) => ({
+      ...prev,
+      [questionId]: !prev[questionId],
+    }));
+  };
+
   // Loading spinner state for "Grade All" button (1 second delay)
   const [isGradingAll, setIsGradingAll] = useState(false);
   const gradeTimerRef = useRef<number | null>(null);
@@ -1063,45 +1075,72 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* Advanced Study Mode: Per-Question Study Tip Note Box */}
-                      {isAdvancedStudyOn && (
-                        <div className="mt-5 bg-amber-50/70 border border-amber-200 rounded-lg p-4 space-y-2">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <label
-                              htmlFor={`note-input-${question.id}`}
-                              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-900"
-                            >
-                              <NotebookPen className="w-4 h-4 text-amber-700 shrink-0" />
-                              <span>{t.personalNoteTitle}</span>
-                            </label>
-                            <div className="flex items-center gap-3">
-                              {hasSavedNote && (
-                                <span className="text-xs font-semibold text-emerald-700">
-                                  {t.personalNoteSavedBadge}
-                                </span>
-                              )}
+                      {/* Per-Question Study Tip Note Box (strictly 1 box at a time) */}
+                      {(isAdvancedStudyOn || Boolean(evaluation)) && (() => {
+                        const isEditorOpen = Boolean(
+                          openNoteEditors[question.id]
+                        );
+                        return (
+                          <div className="mt-5 bg-amber-50/75 border border-amber-200 rounded-xl p-4 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-900">
+                                <NotebookPen className="w-4 h-4 text-amber-800 shrink-0" />
+                                <span>{t.postGradeNoteHeader}</span>
+                                {hasSavedNote && (
+                                  <span className="ml-1 text-xs font-semibold text-emerald-700">
+                                    · {t.personalNoteSavedBadge}
+                                  </span>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => toggleNoteEditor(question.id)}
+                                className="px-3 py-1.5 rounded-lg bg-amber-200/80 hover:bg-amber-300/80 text-amber-950 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                              >
+                                {isEditorOpen
+                                  ? t.hideNoteEditorBtn
+                                  : t.openOrEditNoteBtn}
+                              </button>
+                            </div>
+
+                            {isEditorOpen ? (
+                              <textarea
+                                id={`note-input-${question.id}`}
+                                rows={3}
+                                value={currentNoteText}
+                                onChange={(e) =>
+                                  handleNoteChange(question.id, e.target.value)
+                                }
+                                placeholder={t.personalNotePlaceholder}
+                                className="w-full px-3.5 py-2.5 bg-white rounded-lg border border-amber-300 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/15 outline-none text-sm text-slate-900 transition-all resize-y"
+                              />
+                            ) : hasSavedNote ? (
+                              <div
+                                onClick={() => toggleNoteEditor(question.id)}
+                                title={t.openOrEditNoteBtn}
+                                className="w-full px-3.5 py-2.5 bg-white rounded-lg border border-amber-200 text-sm text-slate-800 whitespace-pre-line cursor-pointer hover:border-amber-300 transition-colors"
+                              >
+                                {currentNoteText}
+                              </div>
+                            ) : (
+                              <p className="text-xs sm:text-sm text-amber-900/80">
+                                {t.postGradeNoNoteYet}
+                              </p>
+                            )}
+
+                            <div className="flex justify-end">
                               <button
                                 type="button"
                                 onClick={() => handleSwitchTab('notes')}
-                                className="text-xs font-bold text-amber-800 hover:text-amber-950 underline underline-offset-4 cursor-pointer"
+                                className="text-xs font-bold text-amber-800 hover:text-amber-950 transition-colors cursor-pointer"
                               >
-                                {t.goToNotesTabBtn}
+                                {t.goToNotesTabBtn} →
                               </button>
                             </div>
                           </div>
-
-                          <textarea
-                            id={`note-input-${question.id}`}
-                            rows={2}
-                            value={currentNoteText}
-                            onChange={(e) =>
-                              handleNoteChange(question.id, e.target.value)
-                            }
-                            placeholder={t.personalNotePlaceholder}
-                            className="w-full px-3.5 py-2 bg-white rounded-lg border border-amber-300 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/15 outline-none text-sm text-slate-900 transition-all resize-y"
-                          />
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Grading Feedback */}
                       {evaluation && (
