@@ -229,12 +229,16 @@ export default function App() {
     setIsEditionMenuOpen(false);
   };
 
-  const handleResetCurrentExam = () => {
+  const handleResetCurrentExam = (scrollToTop = false) => {
     clearPendingGradeTimer();
     setRoundSeed((s) => s + 1);
     setUserInputs({});
     setEvaluations({});
     setIsAllGraded(false);
+    setCelebrationKey(0);
+    if (scrollToTop) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleInputChange = (partId: string, value: string) => {
@@ -659,7 +663,7 @@ export default function App() {
           {isDataUploaded && activeTab !== 'notes' && (
             <button
               type="button"
-              onClick={handleResetCurrentExam}
+              onClick={() => handleResetCurrentExam(false)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -1291,28 +1295,40 @@ export default function App() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleGradeAll}
-                disabled={isGradingAll}
-                className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-white font-bold text-sm sm:text-base transition-colors whitespace-nowrap shrink-0 ${
-                  isGradingAll
-                    ? 'bg-blue-500 cursor-wait opacity-90'
-                    : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 cursor-pointer'
-                }`}
-              >
-                {isGradingAll ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin shrink-0" />
-                    <span>{t.gradingLoadingBtn}</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCheck className="w-5 h-5 shrink-0" />
-                    <span>{t.gradeAllBtn}</span>
-                  </>
-                )}
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleResetCurrentExam(true)}
+                  disabled={isGradingAll}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-sm sm:text-base transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw className="w-4 h-4 shrink-0" />
+                  <span>{t.resetBtn}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGradeAll}
+                  disabled={isGradingAll}
+                  className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-white font-bold text-sm sm:text-base transition-colors whitespace-nowrap shrink-0 ${
+                    isGradingAll
+                      ? 'bg-blue-500 cursor-wait opacity-90'
+                      : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 cursor-pointer'
+                  }`}
+                >
+                  {isGradingAll ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                      <span>{t.gradingLoadingBtn}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCheck className="w-5 h-5 shrink-0" />
+                      <span>{t.gradeAllBtn}</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </section>
           </>
         )}
