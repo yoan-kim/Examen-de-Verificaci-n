@@ -1,89 +1,66 @@
-# 채점 효과음 · 만점 축하 폭죽 · 전체 채점 로딩 및 카드 애니메이션 계획
+# GitHub Actions 빌드 및 GitHub Pages 자동 배포 오류 수정 계획
 
-개별 문제 채점 시 정·오답 및 부분 정답에 따른 직관적인 효과음을 재생하고, 전체 채점 시 1초 로딩 스피너와 부드러운 문항 카드 상하 바운스 애니메이션을 제공하며, 모든 문제를 맞췄을 때 박수 갈채 효과음과 폭죽(컨페티) 축하 연출을 추가합니다.
+외부 가이드의 `deploy.yml` 설정(`node-version: 18` 및 `peaceiris` 브랜치 배포 액션)으로 인해 발생한 `node:util styleText` 문법 에러와 배포 방식 불일치를 해결하고, AI Studio에서 GitHub로 내보내기(Push)만 하면 즉시 **GitHub Actions 직접 배포 방식(`deploy-pages`)**으로 정상 배포되도록 구성합니다.
 
 ### User Review & Critical Decisions
 
 > [!IMPORTANT]
-> 사용자 질의응답을 통해 확정된 핵심 동작 및 설계 결정 사항입니다.
+> 이전 빌드가 실패한 정확한 원인과 확정된 해결 방식입니다.
 
-- **확정 결정 1 (부분 정답 효과음)**: 여러 소문항 중 일부만 맞춘 **부분 정답**일 때는 정답(`띠링!`)이나 오답(`뚜둥`)과 구분되는 **부분 정답 전용 알림음**(부드러운 2단 중립 차임벨)을 재생합니다.
-- **확정 결정 2 (전체 채점 효과음 및 만점 축하 연출)**: `전체 채점하기` 클릭 후 1초 로딩이 끝나고 결과가 표시될 때, 일반 전체 채점 효과음은 생략하고 **해당 회차의 모든 문제를 100% 맞췄을 때만 박수 소리 + 폭죽(컨페티) 연출**을 실행합니다. (개별 문제 채점으로 마지막 남은 문제까지 모두 맞추어 회차 전체 만점이 달성된 순간에도 동일하게 박수 + 폭죽이 터집니다.)
-- **확정 결정 3 (효과음 켜기/끄기 토글 버튼)**: 조용한 장소에서도 학습할 수 있도록 워크스페이스 상단 툴바 영역에 **효과음 켜기/끄기(음소거) 토글 버튼**을 추가합니다(한국어·스페인어 100% 분리 표기).
+- **원인 분석 (왜 이전 `deploy.yml`이 실패했는가?)**:
+  1. **잘못된 Node.js 18 버전 지정 (`node-version: 18`)**: 외부 안내 코드에서 `node-version: 18`로 낮추면서, 최신 `Vite 8`(`rolldown` 번들러)이 요구하는 `import { styleText } from "node:util"`(Node 20.19+ / 22+ 전용 기능)을 찾지 못해 `SyntaxError`로 빌드가 중단되었습니다.
+  2. **배포 액션 불일치 (`peaceiris` vs `deploy-pages`)**: 저장소의 GitHub Pages 설정은 **GitHub Actions 직접 배포 방식**인데, 외부 안내 코드는 브랜치 푸시 방식(`peaceiris/actions-gh-pages`)을 사용하고 있었습니다.
+- **확정 결정 1**: GitHub 저장소의 `Settings > Pages > Build and deployment > Source: GitHub Actions` 설정에 맞춰 공식 `actions/upload-pages-artifact` + `actions/deploy-pages@v4` 파이프라인으로 통일합니다.
+- **확정 결정 2**: GitHub Actions의 Node.js 환경을 **`Node.js 22 LTS`**로 지정하고 상대 경로(`base: './'`) 빌드를 적용하여 AI Studio에서 GitHub로 Push 즉시 배포가 완료되도록 설정합니다.
 
 ---
 
 ### 1. Overview & Core Concept
 
 - **What It Does**:
-  1. **문항별 채점 효과음**:
-     - **완전 정답 (`띠링!`)**: 맑고 경쾌하게 올라가는 장3화음 벨 사운드(C5 → E5 → G5 → C6).
-     - **부분 정답 (전용 알림음)**: 아쉽게 일부만 맞췄음을 알려주는 부드러운 2단 중립 실로폰 톤(E4 → A4).
-     - **오답 (`뚜둥`)**: 낮고 묵직하게 떨어지는 2단 저음 사운드(E3 → Bb2).
-  2. **회차 전원 정답(만점) 축하 연출**:
-     - 해당 회차(1~5회차 또는 모의시험)의 모든 문항이 완전 정답(`allPassed`)에 도달하면, 풍성한 **박수 갈채 및 환호 화음 사운드**와 함께 화면 양쪽 및 중앙에서 다채로운 **폭죽(컨페티) 애니메이션**이 펼쳐집니다.
-  3. **전체 채점 1초 로딩 스피너 & 카드 상하 흔들림 애니메이션**:
-     - `전체 채점하기` 버튼 클릭 시 버튼 내부에 **회전하는 로딩 스피너**와 채점 중 문구(`채점 중...` / `Calificando...`)를 **1초간 표시**합니다.
-     - 1초 후 채점 결과가 일괄 반영되면서 각 문항 카드가 순차적(staggered)으로 **부드럽게 위아래로 흔들리는(바운스) 애니메이션**과 함께 결과 배너가 나타납니다.
-- **Target Audience / Persona**: 한국어 및 스페인어로 인 맞음 확인 시험(15차·16차·17차)을 연습하고 자가 점검하는 학습자.
-- **Key Value**: 즉각적인 청각·시각 피드백을 통해 지루함 없이 몰입감 있게 암기 상태를 점검하고, 만점 달성 시 성취감을 극대화합니다.
+  - `main` (또는 `master`) 브랜치에 코드가 Push되면 GitHub Actions가 **Node.js 22** 환경을 구성하고, 의존성 충돌 없이(`--legacy-peer-deps`) 앱을 빌드한 뒤 `./dist` 결과물을 **GitHub Pages**에 직접 배포합니다.
+- **Target Audience / Persona**: AI Studio에서 GitHub 저장소로 코드를 내보내어(Export/Push) GitHub Pages로 시험 연습 웹앱을 배포하려는 사용자.
+- **Key Value**: GitHub 웹사이트에서 번거롭게 YML 파일을 수동 수정할 필요 없이, AI Studio에서 GitHub로 Push하는 것만으로 빌드부터 페이지 게시까지 한 번에 성공합니다.
 
 ---
 
 ### 2. User Experience & Visual Design
 
 - **Key User Flows**:
-  1. **개별 문제 채점 흐름**:
-     - 사용자가 특정 문항의 답안을 입력하고 `이 문제 채점` / `Verificar esta pregunta` 클릭 → 즉시 채점 결과 배너가 표시되며 결과에 따라 `띠링!`(정답), 부분 정답 차임벨, 또는 `뚜둥`(오답) 효과음 재생 → 해당 카드도 가볍게 바운스되며 피드백 강조. 만약 이 채점으로 현재 회차의 모든 문제가 정답이 되었다면 즉시 박수 소리 + 폭죽 연출 실행.
-  2. **전체 채점 흐름**:
-     - 하단 `전체 채점하기` / `Calificar todo el examen` 버튼 클릭 → 버튼이 비활성화되며 1초 동안 로딩 스피너 아이콘 회전 → 1초 완료 시점에 전 문항 채점 결과가 업데이트되면서 문항 카드들이 위에서 아래로 자연스러운 시차(40ms 간격)를 두고 부드럽게 위아래로 흔들림(`translateY` 탄성 모션) → 전 문항 정답 시 박수 효과음과 화면 폭죽 연출 실행.
-  3. **효과음 음소거 제어**:
-     - 상단 안내 바의 `효과음 켜짐 / 효과음 꺼짐` (`Sonido activado / Sonido silenciado`) 토글 버튼으로 언제든 소리를 켜고 끌 수 있으며, 음소거 상태에서도 폭죽 시각 효과와 카드 애니메이션은 정상 작동합니다.
-
+  1. AI Studio에서 GitHub 저장소로 내보내기(Push) 실행.
+  2. GitHub 저장소의 `Actions` 탭에서 `Deploy to GitHub Pages` 워크플로우가 자동 실행됨.
+  3. `Install and Build` 단계가 Node.js 22 환경에서 에러 없이 완료(`vite build` 성공)되고, `Deploy to GitHub Pages` 단계를 거쳐 배포 URL(`https://yoan-kim.github.io/Examen-de-Verificaci-n/`)이 활성화됨.
 - **Visual Identity & Theme**:
-  - *Aesthetic Direction*: 단정하고 집중도 높은 학습 시험지 인터페이스(`Education & Assessment Sandbox`)에 경쾌한 마이크로 인터랙션을 결합.
-  - *Color Palette & Mood*:
-    - 60% 캔버스: 밝은 슬레이트 배경 (`#F8FAFC`)
-    - 30% 구조 표면: 화이트 문항 카드 (`#FFFFFF`) 및 슬레이트 보더 (`#E2E8F0`)
-    - 10% 시맨틱 포인트: 로열 블루 (`#2563EB`), 정답 에메랄드 (`#059669`), 부분 정답 앰버 (`#D97706`), 오답 코럴 레드 (`#DC2626`)
-  - *Typography & Hierarchy*: `Plus Jakarta Sans` 및 `Pretendard` 조합, 점수·문항 수 집계에는 `tabular-nums` 고정폭 숫자 유지.
-  - *Interactive Feedback & Motion*:
-    - `transform` 및 `opacity`만을 활용한 고성능 키프레임 애니메이션으로 문항 카드가 부드럽게 위아래로 탄성 있게 흔들리는(`0% → -8px → +4px → -2px → 0%`, 약 500ms) 모션 구현.
-    - 전체화면 캔버스 오버레이(`pointer-events-none fixed inset-0 z-50`)를 통해 클릭 방해 없이 부드럽게 흩날리는 폭죽 파티클 연출.
+  - 기존 한국어·스페인어 시험 연습 인터페이스, 채점 효과음, 만점 폭죽 연출, 고급학습기능(암기팁 노트 및 노트 모아보기)이 서브경로에서도 스타일이나 스크립트 깨짐 없이 100% 동일하게 렌더링됩니다.
 
 ---
 
 ### 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: 외부 음원 파일 대신 Web Audio API 실시간 신디사이저 사운드 엔진 채택**
-  - *Chosen Approach*: 브라우저 내장 `AudioContext`를 활용해 `띠링!`(맑은 벨 화음), 부분 정답(2단 차임), `뚜둥`(저음 팀파니/브라스 감쇠음), 그리고 만점 축하 `박수 갈채 + 팡파르`(다중 노이즈 버스트 필터링 박수 질감 + 축하 코드)를 실시간 합성합니다.
-  - *Why*: 네트워크 지연이나 외부 오디오 파일 깨짐(404/CORS)이 전혀 없으며, 클릭 즉시 0ms 지연으로 선명하게 재생됩니다.
-- **Decision 2: 경량 캔버스 폭죽(Confetti Fireworks) 렌더러 내장**
-  - *Chosen Approach*: 별도 무거운 외부 의존성 충돌 위험 없이, 고성능 HTML5 `<canvas>` 파티클 물리 엔진을 내장하여 다중 폭죽 발사(좌·우·중앙 연발)를 구현합니다.
-  - *Why*: Vercel 배포 시 패키지 의존성 충돌을 원천 차단하고, 60fps의 매끄러운 축하 폭죽 연출을 보장합니다.
+- **Decision 1: `Node.js 22` 고정 및 `.npmrc` 연동**
+  - *Chosen Approach*: `actions/setup-node@v4`에서 `node-version: '22'`를 명시하고 `npm install --legacy-peer-deps`로 설치합니다.
+  - *Why*: `Vite 8` 및 `Rolldown`의 `node:util`(`styleText`) 호환성을 100% 충족하며 피어 의존성 충돌을 방지합니다.
+- **Decision 2: 공식 GitHub Pages 직접 배포 액션(`actions/deploy-pages@v4`) 및 권한(`permissions`) 명시**
+  - *Chosen Approach*: 워크플로우 최상단에 `pages: write`, `id-token: write`, `contents: read` 권한을 부여하고 공식 아티팩트 배포 액션을 사용합니다.
+  - *Why*: 별도의 토큰 설정이나 `gh-pages` 브랜치 생성 없이 GitHub Pages의 `GitHub Actions` 소스 모드와 완벽히 연동됩니다.
 
 ---
 
 ### 4. Technical Architecture & Data Strategy *(Technical Reference)*
 
-- **Architecture & Component Diagram**:
+- **Architecture & Deployment Pipeline Diagram**:
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       Exam Practice App (ko / es)                       │
-├──────────────────────┬──────────────────────────┬───────────────────────┤
-│   Sound Synthesizer  │  Grading & Motion State  │  Celebration Overlay  │
-│   (Web Audio API)    │                          │  (HTML5 Canvas)       │
-│  ┌────────────────┐  │  ┌────────────────────┐  │  ┌─────────────────┐  │
-│  │ Correct: 띠링! │  │  │ isGradingAll (1s)  │  │  │ Multi-Burst     │  │
-│  │ Partial: 차임  │◄─┼──┤ cardBounceKey      │──┼─►│ Confetti &      │  │
-│  │ Wrong:   뚜둥  │  │  │ isSoundMuted       │  │  │ Fireworks       │  │
-│  │ Perfect: 박수! │  │  └────────────────────┘  │  └─────────────────┘  │
-│  └────────────────┘  │                          │                       │
-└──────────────────────┴──────────────────────────┴───────────────────────┘
+┌────────────────────────┐     Push / Export     ┌──────────────────────────────┐
+│   Google AI Studio     │ ────────────────────► │     GitHub Repository        │
+│  (Vite + React + TS)   │                       │ (.github/workflows/deploy)   │
+└────────────────────────┘                       └──────────────┬───────────────┘
+                                                                │
+                                                                ▼
+┌────────────────────────┐    Deploy Artifact    ┌──────────────────────────────┐
+│     GitHub Pages       │ ◄──────────────────── │   GitHub Actions Runner      │
+│  (Live Web App URL)    │   (deploy-pages@v4)   │  Node.js 22 + vite build     │
+└────────────────────────┘                       └──────────────────────────────┘
 ```
 
-- **Interactive Component & State Mapping**:
-  - `isSoundMuted`: 효과음 음소거 여부 상태 (`false` 기본값, `localStorage` 연동으로 새로고침 후에도 선호 설정 유지).
-  - `isGradingAll`: `전체 채점하기` 클릭 시 `true`로 전환되어 1초(`1000ms`) 동안 버튼 내부에 `Loader2` 회전 스피너를 렌더링하고 중복 클릭을 방지.
-  - `bounceTrigger`: 채점 완료 시마다 카운터를 증가시켜 각 문항 카드가 `animationDelay`와 함께 부드러운 상하 바운스 애니메이션을 수행하도록 트리거.
-  - `celebrationTrigger`: 현재 회차의 모든 문항(`activeQuestions.length > 0`)이 `allPassed === true`가 되는 순간 박수 갈채 효과음과 3.5초간의 폭죽 애니메이션을 실행.
+- **Configuration Verification**:
+  - Vite 상대 경로(`base: './'`) 설정으로 루트 도메인(Vercel)과 서브경로 도메인(GitHub Pages `/Examen-de-Verificaci-n/`) 양쪽에서 정적 에셋 경로가 깨지지 않도록 보장합니다.
