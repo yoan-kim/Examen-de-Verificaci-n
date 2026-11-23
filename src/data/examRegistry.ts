@@ -107,7 +107,7 @@ export interface UILocalization {
 
 export const i18n: Record<Language, UILocalization> = {
   ko: {
-    changeLangBtn: '언어 선택 화면으로',
+    changeLangBtn: '언어변경 / Cambiar idioma',
     resetBtn: '답안 초기화',
     gradeAllBtn: '전체 채점하기',
     gradingLoadingBtn: '채점 중...',
@@ -209,7 +209,7 @@ export const i18n: Record<Language, UILocalization> = {
     switchToAvailableEditionBtn: (badge) => `이전 차수 열기 (${badge})`,
   },
   es: {
-    changeLangBtn: 'Cambiar idioma',
+    changeLangBtn: '언어변경 / Cambiar idioma',
     resetBtn: 'Reiniciar respuestas',
     gradeAllBtn: 'Calificar todo el examen',
     gradingLoadingBtn: 'Calificando...',
@@ -403,22 +403,32 @@ export function evaluatePartAnswer(
   }
 
   const missingKeywords: string[] = [];
+  let matchedCount = 0;
   for (const kwGroup of part.keywords) {
     const matched = kwGroup.some((kw) =>
       normUser.includes(normalizeForComparison(kw))
     );
-    if (!matched) {
+    if (matched) {
+      matchedCount += 1;
+    } else {
       missingKeywords.push(kwGroup[0]);
     }
   }
 
   const passed = missingKeywords.length === 0;
+  const isPerBlankTenPoints =
+    part.id === 'e18_q3_p1' && part.points === 30 && part.keywords.length === 3;
+  const earnedPoints = passed
+    ? part.points
+    : isPerBlankTenPoints
+    ? matchedCount * 10
+    : 0;
 
   return {
     partId: part.id,
     label: part.label,
     passed,
-    earnedPoints: passed ? part.points : 0,
+    earnedPoints,
     maxPoints: part.points,
     similarity,
     missingKeywords,

@@ -114,6 +114,12 @@ export default function App() {
   // Track whether the bottom-right edition switcher menu is open
   const [isEditionMenuOpen, setIsEditionMenuOpen] = useState(false);
 
+  // Track whether a question was just graded and is waiting for a second Enter press to jump to the next question
+  const [readyToAdvanceMap, setReadyToAdvanceMap] = useState<
+    Record<number, boolean>
+  >({});
+  const gradeBtnRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
   useEffect(() => {
     return () => {
       if (gradeTimerRef.current) {
@@ -191,6 +197,7 @@ export default function App() {
     setActiveTab(1);
     setUserInputs({});
     setEvaluations({});
+    setReadyToAdvanceMap({});
     setIsAllGraded(false);
   };
 
@@ -199,6 +206,7 @@ export default function App() {
     setSelectedLang(null);
     setUserInputs({});
     setEvaluations({});
+    setReadyToAdvanceMap({});
     setIsAllGraded(false);
     setIsEditionMenuOpen(false);
   };
@@ -216,6 +224,7 @@ export default function App() {
     setActiveTab(tab);
     setUserInputs({});
     setEvaluations({});
+    setReadyToAdvanceMap({});
     setIsAllGraded(false);
   };
 
@@ -225,6 +234,7 @@ export default function App() {
     setActiveTab(1);
     setUserInputs({});
     setEvaluations({});
+    setReadyToAdvanceMap({});
     setIsAllGraded(false);
     setIsEditionMenuOpen(false);
   };
@@ -234,6 +244,7 @@ export default function App() {
     setRoundSeed((s) => s + 1);
     setUserInputs({});
     setEvaluations({});
+    setReadyToAdvanceMap({});
     setIsAllGraded(false);
     setCelebrationKey(0);
     if (scrollToTop) {
@@ -241,11 +252,20 @@ export default function App() {
     }
   };
 
-  const handleInputChange = (partId: string, value: string) => {
+  const handleInputChange = (
+    partId: string,
+    value: string,
+    questionId?: number
+  ) => {
     setUserInputs((prev) => ({
       ...prev,
       [partId]: value,
     }));
+    if (questionId !== undefined) {
+      setReadyToAdvanceMap((prev) =>
+        prev[questionId] ? { ...prev, [questionId]: false } : prev
+      );
+    }
   };
 
   // Determine the ordered list of question IDs for the active tab
@@ -331,17 +351,44 @@ export default function App() {
       Object.keys(ed.locales[selectedLang].questions).length > 0
   );
 
-  const handleGradeSingle = (question: QuestionItem) => {
+  const focusQuestionFirstInput = (targetQuestionIndex: number) => {
+    if (activeQuestions.length === 0) return;
+    const normalizedIdx =
+      ((targetQuestionIndex % activeQuestions.length) +
+        activeQuestions.length) %
+      activeQuestions.length;
+    const targetQuestion = activeQuestions[normalizedIdx];
+    const firstPartId = targetQuestion?.parts[0]?.id;
+    if (!firstPartId) return;
+
+    const inputEl = document.getElementById(`input-${firstPartId}`) as
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | null;
+    if (inputEl) {
+      inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      inputEl.focus({ preventScroll: true });
+    }
+  };
+
+  const handleGradeSingle = (question: QuestionItem, keepButtonFocus = true) => {
     const result = evaluateQuestionItem(question, userInputs);
     const updatedEvals = {
       ...evaluations,
       [question.id]: result,
     };
     setEvaluations(updatedEvals);
+    setReadyToAdvanceMap((prev) => ({
+      ...prev,
+      [question.id]: true,
+    }));
 
     setBouncingSingleId(null);
     window.requestAnimationFrame(() => {
       setBouncingSingleId(question.id);
+      if (keepButtonFocus) {
+        gradeBtnRefs.current[question.id]?.focus({ preventScroll: true });
+      }
     });
     if (bounceResetTimerRef.current) {
       window.clearTimeout(bounceResetTimerRef.current);
@@ -428,20 +475,20 @@ export default function App() {
   const renderFormattedPassage = (passage: string) => {
     const lines = passage.split('\n');
     return lines.map((line, lineIdx) => {
-      const segments = line.split(/(\([^()\n]*[①②③④⑤][^()\n]*\))/g);
+      const segments = line.split(/(\([^()\n]*[①②③④⑤][^()\n]*\)|\(\s+\))/g);
       return (
         <div key={lineIdx} className="py-0.5">
           {segments.map((segment, segIdx) => {
             const isBlankBadge =
               segment.startsWith('(') &&
               segment.endsWith(')') &&
-              /[①②③④⑤]/.test(segment);
+              (/[①②③④⑤]/.test(segment) || /^\(\s+\)$/.test(segment));
 
             if (isBlankBadge) {
               return (
                 <span
                   key={segIdx}
-                  className="inline-block font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md mx-0.5 border border-blue-200"
+                  className="inline-block font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md mx-0.5 border border-blue-200 whitespace-pre"
                 >
                   {segment}
                 </span>
@@ -503,17 +550,19 @@ export default function App() {
             >
               {t.mockTabName}
             </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('notes')}
-              className={`py-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'notes'
-                  ? 'text-amber-700 font-bold underline underline-offset-8 decoration-2'
-                  : 'hover:text-slate-900'
-              }`}
-            >
-              {t.notesTabName}
-            </button>
+            {isAdvancedStudyOn && (
+              <button
+                type="button"
+                onClick={() => handleSwitchTab('notes')}
+                className={`py-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'notes'
+                    ? 'text-amber-700 font-bold underline underline-offset-8 decoration-2'
+                    : 'hover:text-slate-900'
+                }`}
+              >
+                {t.notesTabName}
+              </button>
+            )}
           </nav>
 
           {/* Zone 3: Advanced Study Tab, Sound Toggle & Change Language */}
@@ -583,7 +632,11 @@ export default function App() {
             <span>{t.gradingRuleSummary}</span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-7 gap-1.5 bg-slate-200/75 p-1.5 rounded-xl">
+          <div
+            className={`grid grid-cols-2 ${
+              isAdvancedStudyOn ? 'sm:grid-cols-7' : 'sm:grid-cols-6'
+            } gap-1.5 bg-slate-200/75 p-1.5 rounded-xl`}
+          >
             {rounds.map((r) => {
               const isActive = activeTab === r;
               return (
@@ -616,19 +669,21 @@ export default function App() {
               <span>{t.mockTabName}</span>
             </button>
 
-            {/* Consolidated Study Notes Tab */}
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('notes')}
-              className={`col-span-2 sm:col-span-1 py-2.5 px-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap truncate inline-flex items-center justify-center gap-1 ${
-                activeTab === 'notes'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-amber-50/90 text-amber-800 hover:bg-amber-100 hover:text-amber-950'
-              }`}
-            >
-              <StickyNote className="w-3.5 h-3.5 shrink-0" />
-              <span>{t.notesTabName}</span>
-            </button>
+            {/* Consolidated Study Notes Tab (Only visible when Advanced Study is ON) */}
+            {isAdvancedStudyOn && (
+              <button
+                type="button"
+                onClick={() => handleSwitchTab('notes')}
+                className={`col-span-2 sm:col-span-1 py-2.5 px-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap truncate inline-flex items-center justify-center gap-1 ${
+                  activeTab === 'notes'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'bg-amber-50/90 text-amber-800 hover:bg-amber-100 hover:text-amber-950'
+                }`}
+              >
+                <StickyNote className="w-3.5 h-3.5 shrink-0" />
+                <span>{t.notesTabName}</span>
+              </button>
+            )}
           </div>
         </section>
 
@@ -1043,7 +1098,11 @@ export default function App() {
                                   rows={part.rows || 3}
                                   value={userInputs[part.id] || ''}
                                   onChange={(e) =>
-                                    handleInputChange(part.id, e.target.value)
+                                    handleInputChange(
+                                      part.id,
+                                      e.target.value,
+                                      question.id
+                                    )
                                   }
                                   placeholder={t.placeholderDefault}
                                   className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 outline-none text-sm sm:text-base text-slate-900 transition-all resize-y"
@@ -1054,7 +1113,11 @@ export default function App() {
                                   type="text"
                                   value={userInputs[part.id] || ''}
                                   onChange={(e) =>
-                                    handleInputChange(part.id, e.target.value)
+                                    handleInputChange(
+                                      part.id,
+                                      e.target.value,
+                                      question.id
+                                    )
                                   }
                                   placeholder={
                                     question.questionType === 'blank'
@@ -1071,16 +1134,39 @@ export default function App() {
 
                       <div className="flex justify-end mt-4">
                         <button
+                          ref={(el) => {
+                            gradeBtnRefs.current[question.id] = el;
+                          }}
                           type="button"
-                          onClick={() => handleGradeSingle(question)}
-                          className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                          onClick={() => handleGradeSingle(question, true)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (
+                                readyToAdvanceMap[question.id] &&
+                                Boolean(evaluations[question.id])
+                              ) {
+                                setReadyToAdvanceMap((prev) => ({
+                                  ...prev,
+                                  [question.id]: false,
+                                }));
+                                focusQuestionFirstInput(
+                                  (qIndex + 1) % activeQuestions.length
+                                );
+                              } else {
+                                handleGradeSingle(question, true);
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
                         >
                           {t.checkSingleBtn}
                         </button>
                       </div>
 
-                      {/* Per-Question Study Tip Note Box (strictly 1 box at a time) */}
-                      {(isAdvancedStudyOn || Boolean(evaluation)) && (() => {
+                      {/* Per-Question Study Tip Note Box (Only visible when Advanced Study is ON) */}
+                      {isAdvancedStudyOn && (() => {
                         const isEditorOpen = Boolean(
                           openNoteEditors[question.id]
                         );
