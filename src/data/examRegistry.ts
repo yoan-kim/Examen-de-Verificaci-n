@@ -194,6 +194,19 @@ export interface UILocalization {
     scoreText: string,
     dateText: string
   ) => string;
+  // Google Sheets cumulative logging UI strings
+  sheetsSectionTitle: string;
+  sheetsConnectDesc: string;
+  sheetsSignInBtn: string;
+  sheetsCreateOrOpenBtn: string;
+  sheetsCreatingBtn: string;
+  sheetsOpenLinkLabel: string;
+  sheetsCopyLinkBtn: string;
+  sheetsCopiedBadge: string;
+  sheetsAutoLogNotice: string;
+  sheetsLoggedSuccessMsg: string;
+  sheetsConfirmAppendMsg: (workerName: string, scoreText: string) => string;
+  sheetsPassStatusText: string;
 }
 
 export const i18n: Record<Language, UILocalization> = {
@@ -416,6 +429,22 @@ export const i18n: Record<Language, UILocalization> = {
       '명단에서 이름을 선택하거나 이름 직접 입력칸에 이름을 입력해 주세요.',
     formatTelegramPassMessage: (workerName, examLevelTitle, scoreText, dateText) =>
       `${workerName}님이 "${examLevelTitle}"을 "${scoreText}으로" 통과했습니다 (${dateText}) 축하드립니다`,
+    sheetsSectionTitle: '구글 스프레드시트 누적 기록 연동 (이름 · 보낸시간 · 점수 · 합격여부)',
+    sheetsConnectDesc:
+      '구글 계정을 연결하면 텔레그램으로 결과를 보낼 때 [이름, 보낸시간, 점수, 합격여부]가 구글 스프레드시트에 자동 누적되며, 바로 열 수 있는 스프레드시트 링크가 생성됩니다.',
+    sheetsSignInBtn: 'Sign in with Google (스프레드시트 연결 및 생성)',
+    sheetsCreateOrOpenBtn: '누적용 구글 스프레드시트 새로 만들기',
+    sheetsCreatingBtn: '스프레드시트 생성 중...',
+    sheetsOpenLinkLabel: '누적 구글 스프레드시트 바로가기 열기',
+    sheetsCopyLinkBtn: '링크 복사',
+    sheetsCopiedBadge: '복사됨!',
+    sheetsAutoLogNotice:
+      '연결됨: 위 전송 버튼을 누르면 텔레그램 발송과 동시에 이 스프레드시트에 [이름, 보낸시간, 점수, 합격여부]가 자동 누적됩니다.',
+    sheetsLoggedSuccessMsg:
+      '구글 스프레드시트에도 [이름, 보낸시간, 점수, 합격여부]가 누적 기록되었습니다!',
+    sheetsConfirmAppendMsg: (workerName, scoreText) =>
+      `텔레그램 전송과 함께 구글 스프레드시트에 [${workerName} / ${scoreText} / 합격] 기록을 추가하시겠습니까?`,
+    sheetsPassStatusText: '합격 (100점 통과)',
   },
   es: {
     changeLangBtn: '언어변경 / Cambiar idioma',
@@ -648,6 +677,23 @@ export const i18n: Record<Language, UILocalization> = {
       'Por favor seleccione un nombre de la lista o escriba su nombre directamente.',
     formatTelegramPassMessage: (workerName, examLevelTitle, scoreText, dateText) =>
       `${workerName}님(ha aprobado)이 "${examLevelTitle}"을 "${scoreText}으로" 통과했습니다 (${dateText}) 축하드립니다!\n(${workerName} ha aprobado "${examLevelTitle}" con "${scoreText}" (${dateText}) ¡Muchas felicidades!)`,
+    sheetsSectionTitle:
+      'Registro acumulativo en Google Sheets (Nombre · Hora · Puntaje · Aprobación)',
+    sheetsConnectDesc:
+      'Conecte su cuenta de Google para crear automáticamente la hoja de cálculo donde se acumularán [Nombre, Fecha/Hora, Puntaje, Aprobado] cada vez que envíe resultados por Telegram.',
+    sheetsSignInBtn: 'Sign in with Google (Conectar y crear Google Sheets)',
+    sheetsCreateOrOpenBtn: 'Crear nueva hoja de Google Sheets',
+    sheetsCreatingBtn: 'Creando hoja de cálculo...',
+    sheetsOpenLinkLabel: 'Abrir enlace de Google Sheets acumulativo',
+    sheetsCopyLinkBtn: 'Copiar enlace',
+    sheetsCopiedBadge: '¡Copiado!',
+    sheetsAutoLogNotice:
+      'Conectado: Al enviar por Telegram, se registrará automáticamente [Nombre, Hora, Puntaje, Aprobado] en esta hoja de Google Sheets.',
+    sheetsLoggedSuccessMsg:
+      '¡También se registró [Nombre, Hora, Puntaje, Aprobado] en Google Sheets!',
+    sheetsConfirmAppendMsg: (workerName, scoreText) =>
+      `¿Desea enviar por Telegram y registrar [${workerName} / ${scoreText} / Aprobado] en Google Sheets?`,
+    sheetsPassStatusText: '합격 / Aprobado (100 pts)',
   },
 };
 
