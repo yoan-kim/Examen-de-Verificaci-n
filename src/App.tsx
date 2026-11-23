@@ -20,6 +20,9 @@ import {
   Eye,
   EyeOff,
   Trash2,
+  Lock,
+  Unlock,
+  Send,
 } from 'lucide-react';
 import {
   ActiveTab,
@@ -51,6 +54,10 @@ import {
   QuestionAdvancedToolbar,
   renderRedHighlightedText,
 } from './components/FlashcardStudyPanel';
+import {
+  TelegramResultModal,
+  WorkerAuthModal,
+} from './components/WorkerTelegramModal';
 
 export default function App() {
   const [selectedLang, setSelectedLang] = useState<Language | null>(null);
@@ -83,6 +90,19 @@ export default function App() {
       return false;
     }
   });
+
+  // Ecuador Worker House mode state (unlocked via secret code 144000)
+  const [isWorkerModeUnlocked, setIsWorkerModeUnlocked] = useState<boolean>(
+    () => {
+      try {
+        return localStorage.getItem('exam_worker_mode_unlocked') === 'true';
+      } catch {
+        return false;
+      }
+    }
+  );
+  const [isWorkerAuthModalOpen, setIsWorkerAuthModalOpen] = useState(false);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
 
   // Persistent study notes map: key = `${editionId}_${lang}_${questionId}`
   const [studyNotes, setStudyNotes] = useState<Record<string, string>>(() => {
@@ -201,6 +221,25 @@ export default function App() {
       }
       return next;
     });
+  };
+
+  const handleUnlockWorkerMode = () => {
+    setIsWorkerModeUnlocked(true);
+    try {
+      localStorage.setItem('exam_worker_mode_unlocked', 'true');
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  const handleLockWorkerMode = () => {
+    setIsWorkerModeUnlocked(false);
+    setIsTelegramModalOpen(false);
+    try {
+      localStorage.setItem('exam_worker_mode_unlocked', 'false');
+    } catch {
+      // Ignore storage errors
+    }
   };
 
   const getNoteKey = (questionId: number, lang: Language = selectedLang || 'ko') =>
@@ -822,8 +861,32 @@ export default function App() {
             )}
           </nav>
 
-          {/* Zone 3: Advanced Study Tab, Sound Toggle & Change Language */}
+          {/* Zone 3: Lock Tab (Ecuador Worker House), Advanced Study Tab, Sound Toggle & Change Language */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Special Lock Tab for Ecuador Worker House (에콰도르 숙소사명자 / obrero de la casa de obreros) */}
+            <button
+              type="button"
+              onClick={() => setIsWorkerAuthModalOpen(true)}
+              aria-pressed={isWorkerModeUnlocked}
+              title={t.workerLockBtnLabel}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                isWorkerModeUnlocked
+                  ? 'text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300'
+                  : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+              }`}
+            >
+              {isWorkerModeUnlocked ? (
+                <>
+                  <Unlock className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span className="hidden sm:inline">
+                    {t.workerUnlockedBtnLabel}
+                  </span>
+                </>
+              ) : (
+                <Lock className="w-4 h-4 text-slate-600 shrink-0" />
+              )}
+            </button>
+
             {/* Advanced Study Feature Toggle Button right next to Sound Toggle */}
             <button
               type="button"
@@ -1651,17 +1714,30 @@ export default function App() {
 
             {/* Perfect Round Celebration Banner */}
             {isPerfectRound && (
-              <div className="mt-6 bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 sm:p-5 flex items-center gap-3 text-emerald-950 animate-card-bounce">
-                <PartyPopper className="w-6 h-6 text-emerald-600 shrink-0" />
-                <p className="text-sm sm:text-base font-bold">
-                  {t.perfectCelebrationText}
-                </p>
+              <div className="mt-6 bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 text-emerald-950 animate-card-bounce">
+                <div className="flex items-center gap-3">
+                  <PartyPopper className="w-6 h-6 text-emerald-600 shrink-0" />
+                  <p className="text-sm sm:text-base font-bold">
+                    {t.perfectCelebrationText}
+                  </p>
+                </div>
+
+                {isWorkerModeUnlocked && (
+                  <button
+                    type="button"
+                    onClick={() => setIsTelegramModalOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-sm whitespace-nowrap shrink-0"
+                  >
+                    <Send className="w-4 h-4 shrink-0" />
+                    <span>{t.telegramSendBtn}</span>
+                  </button>
+                )}
               </div>
             )}
 
             {/* Bottom Total Score & Grade All Bar */}
             <section className="mt-8 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <div className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
                   {hasAnyEvaluation || isAllGraded
                     ? t.totalScoreSummary(
@@ -1673,6 +1749,12 @@ export default function App() {
                       )
                     : t.beforeGradeText}
                 </div>
+                {isWorkerModeUnlocked && !isPerfectRound && (
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>{t.telegramLockedHint}</span>
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -1708,11 +1790,63 @@ export default function App() {
                     </>
                   )}
                 </button>
+
+                {/* Send Result to Telegram Button (Only rendered when Worker Mode is unlocked via code 144000; enabled strictly at 100 points) */}
+                {isWorkerModeUnlocked && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isPerfectRound) {
+                        setIsTelegramModalOpen(true);
+                      }
+                    }}
+                    disabled={!isPerfectRound || isGradingAll}
+                    title={
+                      isPerfectRound ? t.telegramSendBtn : t.telegramLockedHint
+                    }
+                    className={`inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-bold text-sm sm:text-base transition-all whitespace-nowrap shrink-0 ${
+                      isPerfectRound
+                        ? 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white shadow-sm cursor-pointer'
+                        : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                    }`}
+                  >
+                    <Send className="w-4 h-4 shrink-0" />
+                    <span>{t.telegramSendBtn}</span>
+                  </button>
+                )}
               </div>
             </section>
           </>
         )}
       </main>
+
+      {/* Ecuador Worker House Verification Modal (Lock Tab -> Code 144000) */}
+      <WorkerAuthModal
+        isOpen={isWorkerAuthModalOpen}
+        isUnlocked={isWorkerModeUnlocked}
+        t={t}
+        onClose={() => setIsWorkerAuthModalOpen(false)}
+        onUnlockSuccess={handleUnlockWorkerMode}
+        onLockWorkerMode={handleLockWorkerMode}
+      />
+
+      {/* Telegram 100-Point Result Sender Modal */}
+      <TelegramResultModal
+        isOpen={isTelegramModalOpen}
+        selectedLang={selectedLang}
+        t={t}
+        examLevelTitle={`${localeData.editionBadge} · ${
+          activeTab === 'mock'
+            ? t.mockTabName
+            : activeTab === 'notes'
+            ? t.notesTabName
+            : activeTab === 'flashcards'
+            ? t.flashcardsTabName(0)
+            : t.roundNames[activeTab]
+        }`}
+        scoreText={selectedLang === 'ko' ? '100점' : '100 puntos'}
+        onClose={() => setIsTelegramModalOpen(false)}
+      />
 
       {/* Bottom-Right Floating Exam Edition (Version) Switcher */}
       <div className="fixed bottom-4 right-4 z-30 flex flex-col items-end">

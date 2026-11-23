@@ -157,6 +157,43 @@ export interface UILocalization {
   notUploadedTitle: string;
   notUploadedDesc: string;
   switchToAvailableEditionBtn: (badge: string) => string;
+  // Ecuador Worker House (에콰도르 숙소사명자 / obrero de la casa de obreros) & Telegram strings
+  workerLockBtnLabel: string;
+  workerUnlockedBtnLabel: string;
+  workerModalTitle: string;
+  workerModalQuestion: string;
+  workerModalYesBtn: string;
+  workerModalNoBtn: string;
+  workerCodeInputLabel: string;
+  workerCodeInputPlaceholder: string;
+  workerCodeConfirmBtn: string;
+  workerCodeCancelBtn: string;
+  workerCodeErrorMsg: string;
+  workerActiveStatusTitle: string;
+  workerActiveStatusDesc: string;
+  workerDisableBtn: string;
+  telegramSendBtn: string;
+  telegramLockedHint: string;
+  telegramModalTitle: string;
+  telegramModalSubtitle: string;
+  telegramSelectNameLabel: string;
+  telegramCustomNameLabel: string;
+  telegramCustomNamePlaceholder: string;
+  telegramPreviewLabel: string;
+  telegramChatTargetLabel: string;
+  telegramChatTargetAutoHint: string;
+  telegramChatIdManualPlaceholder: string;
+  telegramSendConfirmBtn: string;
+  telegramSendingBtn: string;
+  telegramSendSuccessMsg: string;
+  telegramNoChatFoundError: string;
+  telegramNameRequiredError: string;
+  formatTelegramPassMessage: (
+    workerName: string,
+    examLevelTitle: string,
+    scoreText: string,
+    dateText: string
+  ) => string;
 }
 
 export const i18n: Record<Language, UILocalization> = {
@@ -339,6 +376,46 @@ export const i18n: Record<Language, UILocalization> = {
     notUploadedDesc:
       '현재 선택한 언어의 해당 차수 시험 문제가 아직 등록되지 않았습니다. 오른쪽 아래의 차수 변경 버튼이나 아래 버튼을 눌러 이전 차수를 이용해 주세요.',
     switchToAvailableEditionBtn: (badge) => `이전 차수 열기 (${badge})`,
+    workerLockBtnLabel: '에콰도르 숙소사명자',
+    workerUnlockedBtnLabel: '숙소사명자 켜짐',
+    workerModalTitle: '에콰도르 숙소사명자 전용 인증',
+    workerModalQuestion: '에콰도르 숙소사명자 입니까?',
+    workerModalYesBtn: '네 (코드 입력)',
+    workerModalNoBtn: '아닙니다 (시험페이지로 돌아가기)',
+    workerCodeInputLabel: '숙소사명자 인증 코드를 입력하세요',
+    workerCodeInputPlaceholder: '코드 입력...',
+    workerCodeConfirmBtn: '코드 확인 및 활성화',
+    workerCodeCancelBtn: '취소 (시험페이지로 돌아가기)',
+    workerCodeErrorMsg: '인증 코드가 일치하지 않습니다. 다시 확인해 주세요.',
+    workerActiveStatusTitle: '에콰도르 숙소사명자 모드가 활성화되어 있습니다.',
+    workerActiveStatusDesc:
+      '각 회차 시험을 채점하여 100점 만점으로 통과하면 하단의 [텔레그램으로 결과 보내기] 버튼이 활성화됩니다.',
+    workerDisableBtn: '숙소사명자 모드 끄기 (일반 모드로 전환)',
+    telegramSendBtn: '텔레그램으로 결과 보내기',
+    telegramLockedHint:
+      '합격 기준 100점 만점 달성 시 [텔레그램으로 결과 보내기] 버튼이 활성화됩니다.',
+    telegramModalTitle: '텔레그램으로 100점 통과 결과 보내기',
+    telegramModalSubtitle:
+      '본인의 이름을 선택하거나 직접 입력한 뒤 전송 버튼을 누르면 연결된 텔레그램 봇으로 합격 메시지가 전송됩니다.',
+    telegramSelectNameLabel: '1. 기존 이름 명단에서 선택',
+    telegramCustomNameLabel: '2. + 이름 직접 입력 (명단에 이름이 없는 경우)',
+    telegramCustomNamePlaceholder: '이름을 직접 입력하세요...',
+    telegramPreviewLabel: '전송될 텔레그램 메시지 미리보기',
+    telegramChatTargetLabel: '수신 텔레그램 채팅방 설정 (자동 연결)',
+    telegramChatTargetAutoHint:
+      '봇에 메시지를 보낸 채팅방을 자동으로 찾아 전송합니다. 특정 채팅방 ID가 있다면 아래에 직접 입력할 수도 있습니다.',
+    telegramChatIdManualPlaceholder:
+      '자동 탐색 사용 중 (직접 입력 시 Chat ID 숫자 입력)',
+    telegramSendConfirmBtn: '텔레그램으로 결과 전송하기',
+    telegramSendingBtn: '텔레그램 전송 중...',
+    telegramSendSuccessMsg:
+      '텔레그램 봇을 통해 합격 축하 메시지가 성공적으로 전송되었습니다!',
+    telegramNoChatFoundError:
+      '연결된 텔레그램 채팅방을 찾을 수 없습니다. 텔레그램에서 해당 봇에게 아무 메시지("/start" 등)를 한 번 보낸 뒤 다시 전송 버튼을 눌러주세요.',
+    telegramNameRequiredError:
+      '명단에서 이름을 선택하거나 이름 직접 입력칸에 이름을 입력해 주세요.',
+    formatTelegramPassMessage: (workerName, examLevelTitle, scoreText, dateText) =>
+      `${workerName}님이 "${examLevelTitle}"을 "${scoreText}으로" 통과했습니다 (${dateText}) 축하드립니다`,
   },
   es: {
     changeLangBtn: '언어변경 / Cambiar idioma',
@@ -530,6 +607,48 @@ export const i18n: Record<Language, UILocalization> = {
     notUploadedDesc:
       'El material en español para esta edición aún no ha sido cargado. Puede seleccionar una edición anterior usando el botón de abajo o el selector en la esquina inferior derecha.',
     switchToAvailableEditionBtn: (badge) => `Ir a la edición disponible (${badge})`,
+    workerLockBtnLabel: 'obrero de la casa de obreros',
+    workerUnlockedBtnLabel: 'Obrero activo',
+    workerModalTitle: 'Verificación de Obrero de la Casa de Obreros',
+    workerModalQuestion: '¿Es usted obrero de la casa de obreros?',
+    workerModalYesBtn: 'Sí (Ingresar código)',
+    workerModalNoBtn: 'No (Volver a la página del examen)',
+    workerCodeInputLabel: 'Ingrese el código de verificación de obrero',
+    workerCodeInputPlaceholder: 'Ingresar código...',
+    workerCodeConfirmBtn: 'Confirmar código y activar',
+    workerCodeCancelBtn: 'Cancelar (Volver al examen)',
+    workerCodeErrorMsg: 'El código ingresado no es válido. Inténtelo de nuevo.',
+    workerActiveStatusTitle:
+      'El modo de obrero de la casa de obreros está activo.',
+    workerActiveStatusDesc:
+      'Cuando obtenga 100 puntos en cualquier ronda del examen, se activará el botón [Enviar resultado por Telegram] en la parte inferior.',
+    workerDisableBtn: 'Desactivar modo de obrero (Volver al modo normal)',
+    telegramSendBtn: 'Enviar resultado por Telegram',
+    telegramLockedHint:
+      'El botón [Enviar resultado por Telegram] se activará al aprobar con 100 puntos.',
+    telegramModalTitle: 'Enviar resultado de 100 puntos por Telegram',
+    telegramModalSubtitle:
+      'Seleccione su nombre de la lista o escríbalo directamente para enviar la notificación de aprobación por el bot de Telegram.',
+    telegramSelectNameLabel: '1. Seleccionar nombre de la lista',
+    telegramCustomNameLabel:
+      '2. + Ingresar nombre directamente (si no está en la lista)',
+    telegramCustomNamePlaceholder: 'Escriba su nombre aquí...',
+    telegramPreviewLabel: 'Vista previa del mensaje de Telegram',
+    telegramChatTargetLabel: 'Chat de destino de Telegram (Conexión automática)',
+    telegramChatTargetAutoHint:
+      'Se enviará automáticamente al chat conectado con el bot. También puede escribir un Chat ID específico abajo si lo desea.',
+    telegramChatIdManualPlaceholder:
+      'Detección automática activa (o ingrese Chat ID numérico)',
+    telegramSendConfirmBtn: 'Enviar resultado a Telegram',
+    telegramSendingBtn: 'Enviando a Telegram...',
+    telegramSendSuccessMsg:
+      '¡El mensaje de felicitación por aprobar con 100 puntos fue enviado por Telegram!',
+    telegramNoChatFoundError:
+      'No se encontró un chat activo conectado al bot. Por favor envíe cualquier mensaje (ej. "/start") al bot en Telegram una vez e inténtelo de nuevo.',
+    telegramNameRequiredError:
+      'Por favor seleccione un nombre de la lista o escriba su nombre directamente.',
+    formatTelegramPassMessage: (workerName, examLevelTitle, scoreText, dateText) =>
+      `${workerName}님(ha aprobado)이 "${examLevelTitle}"을 "${scoreText}으로" 통과했습니다 (${dateText}) 축하드립니다!\n(${workerName} ha aprobado "${examLevelTitle}" con "${scoreText}" (${dateText}) ¡Muchas felicidades!)`,
   },
 };
 
