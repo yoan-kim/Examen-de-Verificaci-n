@@ -222,6 +222,132 @@ export const WorkerAuthModal: React.FC<WorkerAuthModalProps> = ({
   );
 };
 
+interface WorkerHouseCheckScreenProps {
+  title: string;
+  subtitle: string;
+  t: UILocalization;
+  onCompleteWorkerO: () => void;
+  onCompleteWorkerX: () => void;
+  onBackToLang: () => void;
+}
+
+export const WorkerHouseCheckScreen: React.FC<WorkerHouseCheckScreenProps> = ({
+  title,
+  subtitle,
+  t,
+  onCompleteWorkerO,
+  onCompleteWorkerX,
+  onBackToLang,
+}) => {
+  const [showCodeField, setShowCodeField] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleVerifyCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (codeInput.trim() === WORKER_SECRET_CODE) {
+      setErrorMsg(null);
+      onCompleteWorkerO();
+    } else {
+      setErrorMsg(t.workerCodeErrorMsg);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 relative">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 p-8 sm:p-10 shadow-xl text-center">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 mb-5">
+          <Lock className="w-6 h-6" />
+        </div>
+
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-1.5">
+          {title}
+        </h1>
+        <p className="text-xs sm:text-sm font-semibold text-slate-500 mb-6">
+          {subtitle}
+        </p>
+
+        <div className="h-px bg-slate-200 my-6" />
+
+        <div className="flex flex-col gap-3.5">
+          <button
+            type="button"
+            onClick={() => {
+              setShowCodeField(true);
+              setErrorMsg(null);
+            }}
+            className={`w-full py-4 px-6 rounded-xl font-bold text-base sm:text-lg transition-colors cursor-pointer whitespace-nowrap ${
+              showCodeField
+                ? 'bg-blue-700 text-white ring-4 ring-blue-600/20'
+                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
+            }`}
+          >
+            {t.workerModalYesBtn}
+          </button>
+
+          {showCodeField && (
+            <form
+              onSubmit={handleVerifyCodeSubmit}
+              className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 text-left"
+            >
+              <label
+                htmlFor="step2-worker-code-input"
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800"
+              >
+                <KeyRound className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>{t.workerCodeInputLabel}</span>
+              </label>
+              <input
+                id="step2-worker-code-input"
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={codeInput}
+                onChange={(e) => {
+                  setCodeInput(e.target.value);
+                  if (errorMsg) setErrorMsg(null);
+                }}
+                placeholder={t.workerCodeInputPlaceholder}
+                className="w-full px-4 py-3 bg-white rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 outline-none text-base font-bold tracking-widest text-center text-slate-900"
+              />
+              {errorMsg && (
+                <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMsg}</span>
+                </p>
+              )}
+              <button
+                type="submit"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm sm:text-base transition-colors cursor-pointer shadow-xs"
+              >
+                {t.workerCodeConfirmBtn}
+              </button>
+            </form>
+          )}
+
+          <button
+            type="button"
+            onClick={onCompleteWorkerX}
+            className="w-full py-4 px-6 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border-2 border-slate-300 font-bold text-base sm:text-lg transition-colors cursor-pointer whitespace-nowrap"
+          >
+            {t.workerModalNoBtn}
+          </button>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={onBackToLang}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+          >
+            ← {t.changeLangBtn}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface TelegramResultModalProps {
   isOpen: boolean;
   selectedLang: Language;

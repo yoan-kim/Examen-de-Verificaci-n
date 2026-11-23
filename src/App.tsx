@@ -57,10 +57,13 @@ import {
 import {
   TelegramResultModal,
   WorkerAuthModal,
+  WorkerHouseCheckScreen,
 } from './components/WorkerTelegramModal';
 
 export default function App() {
   const [selectedLang, setSelectedLang] = useState<Language | null>(null);
+  const [hasCompletedWorkerCheckStep, setHasCompletedWorkerCheckStep] =
+    useState<boolean>(false);
   const [currentEditionId, setCurrentEditionId] = useState<string>(
     DEFAULT_LATEST_EDITION_ID
   );
@@ -454,6 +457,7 @@ export default function App() {
   const handleSelectLanguage = (lang: Language) => {
     clearPendingGradeTimer();
     setSelectedLang(lang);
+    setHasCompletedWorkerCheckStep(false);
     setActiveTab(1);
     setUserInputs({});
     setEvaluations({});
@@ -464,6 +468,7 @@ export default function App() {
   const handleReturnToLangScreen = () => {
     clearPendingGradeTimer();
     setSelectedLang(null);
+    setHasCompletedWorkerCheckStep(false);
     setUserInputs({});
     setEvaluations({});
     setReadyToAdvanceMap({});
@@ -587,6 +592,27 @@ export default function App() {
   // 2. Main Workspace (100% Korean or 100% Spanish)
   const t = i18n[selectedLang];
   const localeData = currentEdition.locales[selectedLang];
+
+  // Step 2: Immediate Post-Language Selection Screen ("에콰도르 숙소사명자 O / 숙소사명자 X")
+  if (!hasCompletedWorkerCheckStep) {
+    return (
+      <WorkerHouseCheckScreen
+        title={localeData.title}
+        subtitle="에콰도르 숙소사명자 / Obrero de la casa de obreros"
+        t={t}
+        onCompleteWorkerO={() => {
+          handleUnlockWorkerMode();
+          setHasCompletedWorkerCheckStep(true);
+        }}
+        onCompleteWorkerX={() => {
+          handleLockWorkerMode();
+          setHasCompletedWorkerCheckStep(true);
+        }}
+        onBackToLang={handleReturnToLangScreen}
+      />
+    );
+  }
+
   const isDataUploaded =
     localeData.isUploaded !== false &&
     Object.keys(localeData.questions).length > 0;
