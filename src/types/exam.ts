@@ -1,6 +1,30 @@
 export type Language = 'ko' | 'es';
 export type RoundNumber = 1 | 2 | 3 | 4 | 5;
-export type ActiveTab = RoundNumber | 'mock' | 'notes';
+export type ActiveTab = RoundNumber | 'mock' | 'notes' | 'flashcards';
+
+export type FlashcardDifficulty = 'hard' | 'normal' | 'easy';
+
+export type MistakeReasonTagId =
+  | 'missing_word'
+  | 'wrong_order'
+  | 'verse_typo'
+  | 'chapter_verse_num'
+  | 'concept_confusion';
+
+export interface CustomFlashcard {
+  id: string;
+  editionId: string;
+  lang: Language;
+  questionId: number;
+  front: string;
+  back: string;
+  warningKeywords: string[];
+  mistakeTags: MistakeReasonTagId[];
+  difficulty: FlashcardDifficulty;
+  exposureCount: number;
+  remainingTickets: number;
+  createdAt: number;
+}
 
 export interface QuestionPart {
   id: string;
@@ -68,3 +92,4 @@ export interface QuestionEvaluation {
   averageSimilarity: number;
   partResults: PartEvaluation[];
 }
+

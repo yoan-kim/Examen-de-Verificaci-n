@@ -1,6 +1,8 @@
 import {
   ExamEdition,
+  FlashcardDifficulty,
   Language,
+  MistakeReasonTagId,
   PartEvaluation,
   QuestionEvaluation,
   QuestionItem,
@@ -94,6 +96,58 @@ export interface UILocalization {
   showAnswerInNoteToggle: string;
   hideAnswerInNoteToggle: string;
   clearSingleNoteBtn: string;
+  // Flashcards & Anti-Mistake Advanced Study UI strings
+  flashcardsTabName: (count: number) => string;
+  mistakeReasonHeader: string;
+  mistakeReasonHint: string;
+  mistakeTagLabels: Record<MistakeReasonTagId, string>;
+  frequentMissedKeywordsTitle: string;
+  frequentMissedKeywordsHint: string;
+  missedTimesBadge: (count: number) => string;
+  clearMissedKeywordsBtn: string;
+  cardBuilderHeader: string;
+  cardBuilderSub: string;
+  openCardBuilderBtn: string;
+  closeCardBuilderBtn: string;
+  quickFillLabel: string;
+  quickFillWholeQuestion: string;
+  cardFrontLabel: string;
+  cardFrontPlaceholder: string;
+  cardBackLabel: string;
+  cardBackPlaceholder: string;
+  cardWarningWordsLabel: string;
+  cardWarningWordsPlaceholder: string;
+  saveNewCardBtn: string;
+  updateCardBtn: string;
+  cancelEditCardBtn: string;
+  questionCardsListTitle: (count: number) => string;
+  goToFlashcardsTabBtn: (count: number) => string;
+  flashcardsPageTitle: string;
+  flashcardsPageDesc: string;
+  flashcardsEmptyTitle: string;
+  flashcardsEmptyDesc: string;
+  cardQueueInfoBadge: (currentPos: number, totalCards: number) => string;
+  cardExposureCountBadge: (count: number) => string;
+  cardDifficultyStatusBadge: Record<FlashcardDifficulty, string>;
+  cardOrigQuestionLink: (qId: number) => string;
+  cardPracticeInputLabel: string;
+  cardPracticeInputPlaceholder: string;
+  cardCheckPracticeBtn: string;
+  cardShowAnswerBtn: string;
+  cardPracticeMatchBanner: (similarity: number, allWarningMatched: boolean) => string;
+  cardBackHeader: string;
+  cardRedHighlighterLegend: string;
+  ankiRatePrompt: string;
+  ankiHardBtn: string;
+  ankiHardDesc: string;
+  ankiNormalBtn: string;
+  ankiNormalDesc: string;
+  ankiEasyBtn: string;
+  ankiEasyDesc: string;
+  deckManageSectionTitle: (count: number) => string;
+  resetAllCardExposuresBtn: string;
+  editCardAction: string;
+  deleteCardAction: string;
   // Version Switcher (bottom-right) strings
   versionSwitcherLabel: string;
   versionSwitcherModalTitle: string;
@@ -183,7 +237,7 @@ export const i18n: Record<Language, UILocalization> = {
     personalNoteSavedBadge: '자동 저장됨',
     personalNoteEmptyHint: '아직 작성된 암기팁 노트가 없습니다.',
     openOrEditNoteBtn: '내 노트 열람 / 편집',
-    hideNoteEditorBtn: '노트 편집 닫기',
+    hideNoteEditorBtn: '노트 저장',
     postGradeNoteHeader: '내 학습 노트 팁',
     postGradeNoNoteYet:
       '이 문제에 작성된 개인 노트가 없습니다. 오른쪽 버튼을 눌러 암기 팁을 바로 메모해 보세요.',
@@ -199,6 +253,84 @@ export const i18n: Record<Language, UILocalization> = {
     showAnswerInNoteToggle: '모범 답안 함께 보기',
     hideAnswerInNoteToggle: '모범 답안 숨기기',
     clearSingleNoteBtn: '노트 비우기',
+    flashcardsTabName: (count) =>
+      count > 0 ? `학습카드 (${count})` : '학습카드',
+    mistakeReasonHeader: '내가 틀린 이유 · 주의 태그',
+    mistakeReasonHint:
+      '같은 이유로 반복해서 틀리지 않도록 주의할 포인트를 태그해 두세요.',
+    mistakeTagLabels: {
+      missing_word: '핵심 단어 누락',
+      wrong_order: '순서 혼동',
+      verse_typo: '성구 토씨·조사 오타',
+      chapter_verse_num: '장·절 숫자 혼동',
+      concept_confusion: '내용·인물 혼동',
+    },
+    frequentMissedKeywordsTitle: '내가 자주 빠뜨린 단골 누락 키워드 (빨간 형광펜 경고)',
+    frequentMissedKeywordsHint:
+      '채점 시 누락되었던 핵심 단어입니다. 모범 답안과 학습카드에서 빨간 형광펜으로 자동 강조됩니다.',
+    missedTimesBadge: (count) => `${count}회 누락`,
+    clearMissedKeywordsBtn: '누락 기록 초기화',
+    cardBuilderHeader: '나만의 학습카드 만들기 (이 문제 참고 제작)',
+    cardBuilderSub:
+      '위의 문제와 모범 답안을 보면서 특히 기억하고 싶거나 틀렸던 부분만 골라 직접 학습카드로 만들어 보세요.',
+    openCardBuilderBtn: '+ 학습카드 만들기',
+    closeCardBuilderBtn: '카드 작성 닫기',
+    quickFillLabel: '문항 내용 빠른 불러오기:',
+    quickFillWholeQuestion: '문제 전체 불러오기',
+    cardFrontLabel: '카드 앞면 (질문 · 빈칸 · 암기 단서)',
+    cardFrontPlaceholder:
+      '예: 계 2~3장 출현 인물 세 존재와 니골라당이 한 일은?',
+    cardBackLabel: '카드 뒷면 (정답 · 핵심 암기 문장)',
+    cardBackPlaceholder:
+      '예: 일곱 사자, 니골라당, 요한 / 니골라당: 우상의 제물과 교훈, 행음',
+    cardWarningWordsLabel: '빨간 형광펜 강조 단어 (쉼표로 구분 · 생략 가능)',
+    cardWarningWordsPlaceholder:
+      '특히 눈에 띄게 기억할 단어를 쉼표(,)로 구분해 적어주세요 (예: 우상의 제물, 교훈, 행음)',
+    saveNewCardBtn: '이 학습카드 추가하기',
+    updateCardBtn: '학습카드 수정 저장',
+    cancelEditCardBtn: '수정 취소',
+    questionCardsListTitle: (count) =>
+      `이 문제에서 만든 내 학습카드 (${count}장)`,
+    goToFlashcardsTabBtn: (count) =>
+      `학습카드 복습 탭에서 반복 학습하기 (${count}장) →`,
+    flashcardsPageTitle: '나만의 학습카드 반복 복습 (어려움 3 : 보통 2 : 쉬움 1)',
+    flashcardsPageDesc:
+      '날짜 계산 없이 현재 덱에서 [어려움 3번 : 보통 2번 : 쉬움 1번] 비율로 노출 순서만 자동 조정하여 약점을 집중 반복합니다.',
+    flashcardsEmptyTitle: '아직 직접 만든 학습카드가 없습니다.',
+    flashcardsEmptyDesc:
+      '시험 문제를 풀면서 각 문제 아래의 [+ 학습카드 만들기] 버튼을 눌러 틀렸던 부분이나 꼭 기억할 내용을 카드로 만들어 보세요.',
+    cardQueueInfoBadge: (currentPos, totalCards) =>
+      `전체 ${totalCards}장 중 현재 순서 #${currentPos}`,
+    cardExposureCountBadge: (count) => `누적 노출 ${count}회`,
+    cardDifficultyStatusBadge: {
+      hard: '어려움 (사이클당 3회 노출)',
+      normal: '보통 (사이클당 2회 노출)',
+      easy: '쉬움 (맨 뒤로 · 사이클당 1회 노출)',
+    },
+    cardOrigQuestionLink: (qId) => `원본 ${qId}번 문항`,
+    cardPracticeInputLabel: '직접 답 타이핑 연습 (입력 후 Enter로 즉시 채점)',
+    cardPracticeInputPlaceholder:
+      '카드 앞면을 보고 여기에 정답을 직접 타이핑해 본 뒤 Enter를 누르세요...',
+    cardCheckPracticeBtn: '타이핑 채점 및 정답 확인 (Enter)',
+    cardShowAnswerBtn: '바로 정답 뒷면 보기',
+    cardPracticeMatchBanner: (similarity, allWarningMatched) =>
+      allWarningMatched
+        ? `정확도 ${similarity}% · 강조 핵심어를 모두 포함했습니다!`
+        : `정확도 ${similarity}% · 아래 빨간 형광펜 단어를 다시 확인하세요!`,
+    cardBackHeader: '카드 뒷면 (정답 및 빨간 형광펜 강조)',
+    cardRedHighlighterLegend: '빨간 형광펜 = 단골 누락 키워드 및 집중 암기 단어',
+    ankiRatePrompt:
+      '이 카드의 암기 난이도를 선택하세요 (선택 즉시 다음 카드로 넘어가며 반복 노출 순서가 조정됩니다):',
+    ankiHardBtn: '어려움 (3회 노출)',
+    ankiHardDesc: '앞쪽 순서로 바로 재투입 · 쉬움 1번 나올 때 3번 등장',
+    ankiNormalBtn: '보통 (2회 노출)',
+    ankiNormalDesc: '중간 순서로 배치 · 쉬움 1번 나올 때 2번 등장',
+    ankiEasyBtn: '쉬움 (1회 노출)',
+    ankiEasyDesc: '맨 뒤 순서로 이동 · 어려움 3번 나올 때 1번 등장',
+    deckManageSectionTitle: (count) => `내가 만든 전체 학습카드 목록 (${count}장)`,
+    resetAllCardExposuresBtn: '노출 횟수 전체 0회로 초기화',
+    editCardAction: '수정',
+    deleteCardAction: '삭제',
     versionSwitcherLabel: '차수 변경',
     versionSwitcherModalTitle: '시험 차수(버전) 선택',
     versionLatestTag: '최신 기본',
@@ -289,7 +421,7 @@ export const i18n: Record<Language, UILocalization> = {
     personalNoteSavedBadge: 'Guardado automático',
     personalNoteEmptyHint: 'Aún no hay notas escritas para esta pregunta.',
     openOrEditNoteBtn: 'Ver / Editar mi nota',
-    hideNoteEditorBtn: 'Cerrar editor de nota',
+    hideNoteEditorBtn: 'Guardar nota',
     postGradeNoteHeader: 'Mi Nota de Estudio Personal',
     postGradeNoNoteYet:
       'No hay notas registradas para esta pregunta. Presione el botón para agregar un consejo de estudio.',
@@ -305,6 +437,91 @@ export const i18n: Record<Language, UILocalization> = {
     showAnswerInNoteToggle: 'Mostrar respuestas correctas',
     hideAnswerInNoteToggle: 'Ocultar respuestas correctas',
     clearSingleNoteBtn: 'Borrar nota',
+    flashcardsTabName: (count) =>
+      count > 0 ? `Tarjetas (${count})` : 'Tarjetas',
+    mistakeReasonHeader: 'Motivo de error · Etiquetas de atención',
+    mistakeReasonHint:
+      'Marque el motivo de su error para no volver a fallar por la misma razón.',
+    mistakeTagLabels: {
+      missing_word: 'Palabra clave omitida',
+      wrong_order: 'Orden confundido',
+      verse_typo: 'Error exacto en versículo',
+      chapter_verse_num: 'Confusión de capítulo/versículo',
+      concept_confusion: 'Confusión de concepto/personaje',
+    },
+    frequentMissedKeywordsTitle:
+      'Palabras clave omitidas frecuentemente (Alerta en rojo)',
+    frequentMissedKeywordsHint:
+      'Palabras que omitió al calificar. Se resaltan automáticamente en rojo en las respuestas y tarjetas.',
+    missedTimesBadge: (count) => `Omitida ${count}x`,
+    clearMissedKeywordsBtn: 'Reiniciar historial',
+    cardBuilderHeader:
+      'Crear mi propia Tarjeta de Estudio (basada en esta pregunta)',
+    cardBuilderSub:
+      'Consultando la pregunta y la respuesta correcta arriba, cree tarjetas personalizadas con las partes que más necesita memorizar.',
+    openCardBuilderBtn: '+ Crear tarjeta de estudio',
+    closeCardBuilderBtn: 'Cerrar creador de tarjetas',
+    quickFillLabel: 'Autocompletar desde la pregunta:',
+    quickFillWholeQuestion: 'Cargar pregunta completa',
+    cardFrontLabel: 'Frente de la tarjeta (Pregunta · Pista)',
+    cardFrontPlaceholder:
+      'Ej.: ¿Cuáles son los tres seres que aparecen en Ap 2-3 y qué hicieron los Nicolaitas?',
+    cardBackLabel: 'Reverso de la tarjeta (Respuesta a memorizar)',
+    cardBackPlaceholder:
+      'Ej.: Siete mensajeros, Nicolaitas, Juan / Nicolaitas: los sacrificios a los ídolos, la doctrina y la fornicación',
+    cardWarningWordsLabel:
+      'Palabras a resaltar en rojo (separadas por coma · opcional)',
+    cardWarningWordsPlaceholder:
+      'Palabras clave que desea destacar en rojo (ej.: sacrificios, doctrina, fornicación)',
+    saveNewCardBtn: 'Agregar esta tarjeta',
+    updateCardBtn: 'Guardar cambios de tarjeta',
+    cancelEditCardBtn: 'Cancelar',
+    questionCardsListTitle: (count) =>
+      `Mis tarjetas creadas en esta pregunta (${count})`,
+    goToFlashcardsTabBtn: (count) =>
+      `Ir a repasar en la pestaña Tarjetas (${count}) →`,
+    flashcardsPageTitle:
+      'Repaso de Tarjetas de Estudio (Proporción Difícil 3 : Normal 2 : Fácil 1)',
+    flashcardsPageDesc:
+      'Sin fechas ni temporizadores: ajusta únicamente el orden de exposición para que las tarjetas Difíciles salgan 3 veces, las Normales 2 veces y las Fáciles 1 vez al final.',
+    flashcardsEmptyTitle: 'Aún no ha creado tarjetas de estudio.',
+    flashcardsEmptyDesc:
+      'Mientras resuelve las preguntas del examen, presione el botón [+ Crear tarjeta de estudio] debajo de cualquier pregunta para crear sus propias tarjetas.',
+    cardQueueInfoBadge: (currentPos, totalCards) =>
+      `Tarjeta #${currentPos} de ${totalCards} en total`,
+    cardExposureCountBadge: (count) => `Exposiciones: ${count}`,
+    cardDifficultyStatusBadge: {
+      hard: 'Difícil (3 exposiciones por ciclo)',
+      normal: 'Normal (2 exposiciones por ciclo)',
+      easy: 'Fácil (Al final · 1 exposición por ciclo)',
+    },
+    cardOrigQuestionLink: (qId) => `Pregunta N.º ${qId}`,
+    cardPracticeInputLabel:
+      'Práctica de escritura directa (Escriba y presione Enter para calificar)',
+    cardPracticeInputPlaceholder:
+      'Escriba aquí la respuesta viendo el frente de la tarjeta y presione Enter...',
+    cardCheckPracticeBtn: 'Calificar y ver respuesta (Enter)',
+    cardShowAnswerBtn: 'Ver respuesta directamente',
+    cardPracticeMatchBanner: (similarity, allWarningMatched) =>
+      allWarningMatched
+        ? `Exactitud ${similarity}% · ¡Incluyó todas las palabras clave resaltadas!`
+        : `Exactitud ${similarity}% · ¡Revise las palabras resaltadas en rojo abajo!`,
+    cardBackHeader: 'Reverso de la tarjeta (Respuesta y resaltado en rojo)',
+    cardRedHighlighterLegend:
+      'Resaltado rojo = Palabras omitidas frecuentemente y puntos clave',
+    ankiRatePrompt:
+      'Seleccione la dificultad para ajustar el orden de repetición y pasar a la siguiente tarjeta:',
+    ankiHardBtn: 'Difícil (3x)',
+    ankiHardDesc: 'Vuelve pronto · Sale 3 veces por cada 1 de Fácil',
+    ankiNormalBtn: 'Normal (2x)',
+    ankiNormalDesc: 'Orden medio · Sale 2 veces por cada 1 de Fácil',
+    ankiEasyBtn: 'Fácil (1x · Al final)',
+    ankiEasyDesc: 'Va al final · Sale 1 vez por cada 3 de Difícil',
+    deckManageSectionTitle: (count) =>
+      `Lista completa de mis tarjetas (${count})`,
+    resetAllCardExposuresBtn: 'Reiniciar contador de exposiciones a 0',
+    editCardAction: 'Editar',
+    deleteCardAction: 'Eliminar',
     versionSwitcherLabel: 'Cambiar edición',
     versionSwitcherModalTitle: 'Seleccionar edición del examen',
     versionLatestTag: 'Más reciente',

@@ -23,7 +23,10 @@ import {
 } from 'lucide-react';
 import {
   ActiveTab,
+  CustomFlashcard,
+  FlashcardDifficulty,
   Language,
+  MistakeReasonTagId,
   QuestionEvaluation,
   QuestionItem,
   RoundNumber,
@@ -42,6 +45,12 @@ import {
   playApplauseSound,
 } from './utils/soundEffects';
 import { CelebrationFireworks } from './components/CelebrationFireworks';
+import {
+  DIFFICULTY_TICKET_WEIGHT,
+  FlashcardReviewTab,
+  QuestionAdvancedToolbar,
+  renderRedHighlightedText,
+} from './components/FlashcardStudyPanel';
 
 export default function App() {
   const [selectedLang, setSelectedLang] = useState<Language | null>(null);
@@ -84,6 +93,42 @@ export default function App() {
       return {};
     }
   });
+
+  // Persistent mistake reason tags map: key = `${editionId}_${lang}_${questionId}`
+  const [mistakeTagsByKey, setMistakeTagsByKey] = useState<
+    Record<string, MistakeReasonTagId[]>
+  >(() => {
+    try {
+      const saved = localStorage.getItem('exam_mistake_tags_v1');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Persistent frequently missed keywords counter map: key = `${editionId}_${lang}_${questionId}` -> { [keyword]: count }
+  const [missedKeywordsByKey, setMissedKeywordsByKey] = useState<
+    Record<string, Record<string, number>>
+  >(() => {
+    try {
+      const saved = localStorage.getItem('exam_missed_keywords_v1');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Persistent self-made flashcards array
+  const [customFlashcards, setCustomFlashcards] = useState<CustomFlashcard[]>(
+    () => {
+      try {
+        const saved = localStorage.getItem('exam_custom_flashcards_v1');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+  );
 
   // Notes tab filter ('all' | 'written') and model answer visibility toggle
   const [notesFilter, setNotesFilter] = useState<'all' | 'written'>('all');
@@ -151,7 +196,7 @@ export default function App() {
       } catch {
         // Ignore storage errors
       }
-      if (!next && activeTab === 'notes') {
+      if (!next && (activeTab === 'notes' || activeTab === 'flashcards')) {
         setActiveTab(1);
       }
       return next;
@@ -168,6 +213,182 @@ export default function App() {
       const next = { ...prev, [key]: value };
       try {
         localStorage.setItem('exam_study_notes_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const handleToggleQuestionMistakeTag = (
+    questionId: number,
+    tagId: MistakeReasonTagId
+  ) => {
+    if (!selectedLang) return;
+    const key = getNoteKey(questionId, selectedLang);
+    setMistakeTagsByKey((prev) => {
+      const current = prev[key] || [];
+      const exists = current.includes(tagId);
+      const updated = exists
+        ? current.filter((t) => t !== tagId)
+        : [...current, tagId];
+      const next = { ...prev, [key]: updated };
+      try {
+        localStorage.setItem('exam_mistake_tags_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const recordMissedKeywordsForEvaluation = (
+    evalResults: QuestionEvaluation[]
+  ) => {
+    if (!selectedLang) return;
+    setMissedKeywordsByKey((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      for (const qEval of evalResults) {
+        const key = getNoteKey(qEval.questionId, selectedLang);
+        const existingMap = { ...(next[key] || {}) };
+        for (const pr of qEval.partResults) {
+          if (!pr.passed && pr.missingKeywords.length > 0) {
+            for (const kw of pr.missingKeywords) {
+              existingMap[kw] = (existingMap[kw] || 0) + 1;
+              changed = true;
+            }
+          }
+        }
+        if (Object.keys(existingMap).length > 0) {
+          next[key] = existingMap;
+        }
+      }
+
+      if (changed) {
+        try {
+          localStorage.setItem('exam_missed_keywords_v1', JSON.stringify(next));
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      return changed ? next : prev;
+    });
+  };
+
+  const handleClearMissedKeywords = (questionId: number) => {
+    if (!selectedLang) return;
+    const key = getNoteKey(questionId, selectedLang);
+    setMissedKeywordsByKey((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      try {
+        localStorage.setItem('exam_missed_keywords_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const handleSaveFlashcard = (
+    questionId: number,
+    cardData: {
+      id?: string;
+      front: string;
+      back: string;
+      warningKeywords: string[];
+      mistakeTags: MistakeReasonTagId[];
+    }
+  ) => {
+    if (!selectedLang) return;
+    setCustomFlashcards((prev) => {
+      let next: CustomFlashcard[];
+      if (cardData.id) {
+        next = prev.map((c) =>
+          c.id === cardData.id
+            ? {
+                ...c,
+                front: cardData.front,
+                back: cardData.back,
+                warningKeywords: cardData.warningKeywords,
+                mistakeTags: cardData.mistakeTags,
+              }
+            : c
+        );
+      } else {
+        const newCard: CustomFlashcard = {
+          id: `fc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          editionId: currentEditionId,
+          lang: selectedLang,
+          questionId,
+          front: cardData.front,
+          back: cardData.back,
+          warningKeywords: cardData.warningKeywords,
+          mistakeTags: cardData.mistakeTags,
+          difficulty: 'hard',
+          exposureCount: 0,
+          remainingTickets: DIFFICULTY_TICKET_WEIGHT.hard,
+          createdAt: Date.now(),
+        };
+        next = [...prev, newCard];
+      }
+      try {
+        localStorage.setItem('exam_custom_flashcards_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const handleDeleteFlashcard = (cardId: string) => {
+    setCustomFlashcards((prev) => {
+      const next = prev.filter((c) => c.id !== cardId);
+      try {
+        localStorage.setItem('exam_custom_flashcards_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const handleRateFlashcard = (
+    cardId: string,
+    difficulty: FlashcardDifficulty
+  ) => {
+    setCustomFlashcards((prev) => {
+      const next = prev.map((c) =>
+        c.id === cardId
+          ? {
+              ...c,
+              difficulty,
+              exposureCount: c.exposureCount + 1,
+              remainingTickets: DIFFICULTY_TICKET_WEIGHT[difficulty],
+            }
+          : c
+      );
+      try {
+        localStorage.setItem('exam_custom_flashcards_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const handleResetAllCardExposures = () => {
+    if (!selectedLang) return;
+    setCustomFlashcards((prev) => {
+      const next = prev.map((c) =>
+        c.editionId === currentEditionId && c.lang === selectedLang
+          ? { ...c, exposureCount: 0 }
+          : c
+      );
+      try {
+        localStorage.setItem('exam_custom_flashcards_v1', JSON.stringify(next));
       } catch {
         // Ignore storage errors
       }
@@ -213,7 +434,7 @@ export default function App() {
 
   const handleSwitchTab = (tab: ActiveTab) => {
     clearPendingGradeTimer();
-    if (tab === 'notes' && !isAdvancedStudyOn) {
+    if ((tab === 'notes' || tab === 'flashcards') && !isAdvancedStudyOn) {
       setIsAdvancedStudyOn(true);
       try {
         localStorage.setItem('exam_advanced_study_on', 'true');
@@ -270,7 +491,11 @@ export default function App() {
 
   // Determine the ordered list of question IDs for the active tab
   const activeQuestionIds = useMemo(() => {
-    if (activeTab === 'mock' || activeTab === 'notes') {
+    if (
+      activeTab === 'mock' ||
+      activeTab === 'notes' ||
+      activeTab === 'flashcards'
+    ) {
       // Sequential 1 -> N order
       return currentEdition.allQuestionIds;
     }
@@ -378,6 +603,7 @@ export default function App() {
       [question.id]: result,
     };
     setEvaluations(updatedEvals);
+    recordMissedKeywordsForEvaluation([result]);
     setReadyToAdvanceMap((prev) => ({
       ...prev,
       [question.id]: true,
@@ -428,10 +654,14 @@ export default function App() {
 
     gradeTimerRef.current = window.setTimeout(() => {
       const newEvals: Record<number, QuestionEvaluation> = {};
+      const evalList: QuestionEvaluation[] = [];
       for (const q of activeQuestions) {
-        newEvals[q.id] = evaluateQuestionItem(q, userInputs);
+        const res = evaluateQuestionItem(q, userInputs);
+        newEvals[q.id] = res;
+        evalList.push(res);
       }
       setEvaluations(newEvals);
+      recordMissedKeywordsForEvaluation(evalList);
       setIsAllGraded(true);
       setIsGradingAll(false);
       setBouncingAllCards(true);
@@ -501,6 +731,18 @@ export default function App() {
     });
   };
 
+  const editionFlashcards = customFlashcards.filter(
+    (c) => c.editionId === currentEditionId && c.lang === selectedLang
+  );
+
+  const missedKeywordsByQuestion: Record<number, Record<string, number>> = {};
+  for (const qId of currentEdition.allQuestionIds) {
+    const map = missedKeywordsByKey[getNoteKey(qId, selectedLang)];
+    if (map && Object.keys(map).length > 0) {
+      missedKeywordsByQuestion[qId] = map;
+    }
+  }
+
   const rounds: RoundNumber[] = [1, 2, 3, 4, 5];
 
   const currentTabDescription =
@@ -508,6 +750,8 @@ export default function App() {
       ? localeData.mockDescription
       : activeTab === 'notes'
       ? localeData.notesDescription
+      : activeTab === 'flashcards'
+      ? t.flashcardsPageDesc
       : localeData.roundDescriptions[activeTab];
 
   return (
@@ -551,17 +795,30 @@ export default function App() {
               {t.mockTabName}
             </button>
             {isAdvancedStudyOn && (
-              <button
-                type="button"
-                onClick={() => handleSwitchTab('notes')}
-                className={`py-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'notes'
-                    ? 'text-amber-700 font-bold underline underline-offset-8 decoration-2'
-                    : 'hover:text-slate-900'
-                }`}
-              >
-                {t.notesTabName}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('notes')}
+                  className={`py-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    activeTab === 'notes'
+                      ? 'text-amber-700 font-bold underline underline-offset-8 decoration-2'
+                      : 'hover:text-slate-900'
+                  }`}
+                >
+                  {t.notesTabName}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('flashcards')}
+                  className={`py-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    activeTab === 'flashcards'
+                      ? 'text-indigo-700 font-bold underline underline-offset-8 decoration-2'
+                      : 'hover:text-slate-900'
+                  }`}
+                >
+                  {t.flashcardsTabName(editionFlashcards.length)}
+                </button>
+              </>
             )}
           </nav>
 
@@ -634,7 +891,9 @@ export default function App() {
 
           <div
             className={`grid grid-cols-2 ${
-              isAdvancedStudyOn ? 'sm:grid-cols-7' : 'sm:grid-cols-6'
+              isAdvancedStudyOn
+                ? 'sm:grid-cols-4 lg:grid-cols-8'
+                : 'sm:grid-cols-6'
             } gap-1.5 bg-slate-200/75 p-1.5 rounded-xl`}
           >
             {rounds.map((r) => {
@@ -669,72 +928,103 @@ export default function App() {
               <span>{t.mockTabName}</span>
             </button>
 
-            {/* Consolidated Study Notes Tab (Only visible when Advanced Study is ON) */}
+            {/* Consolidated Study Notes & Self-Made Flashcards Tabs (Only visible when Advanced Study is ON) */}
             {isAdvancedStudyOn && (
-              <button
-                type="button"
-                onClick={() => handleSwitchTab('notes')}
-                className={`col-span-2 sm:col-span-1 py-2.5 px-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap truncate inline-flex items-center justify-center gap-1 ${
-                  activeTab === 'notes'
-                    ? 'bg-amber-600 text-white shadow-sm'
-                    : 'bg-amber-50/90 text-amber-800 hover:bg-amber-100 hover:text-amber-950'
-                }`}
-              >
-                <StickyNote className="w-3.5 h-3.5 shrink-0" />
-                <span>{t.notesTabName}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('notes')}
+                  className={`py-2.5 px-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap truncate inline-flex items-center justify-center gap-1 ${
+                    activeTab === 'notes'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-amber-50/90 text-amber-800 hover:bg-amber-100 hover:text-amber-950'
+                  }`}
+                >
+                  <StickyNote className="w-3.5 h-3.5 shrink-0" />
+                  <span>{t.notesTabName}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('flashcards')}
+                  className={`py-2.5 px-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap truncate inline-flex items-center justify-center gap-1 ${
+                    activeTab === 'flashcards'
+                      ? 'bg-violet-600 text-white shadow-sm'
+                      : 'bg-violet-50/90 text-violet-800 hover:bg-violet-100 hover:text-violet-950'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                  <span>{t.flashcardsTabName(editionFlashcards.length)}</span>
+                </button>
+              </>
             )}
           </div>
         </section>
 
         {/* Active Advanced Study Mode Banner (shown on exam tabs when Advanced Study is ON) */}
-        {isAdvancedStudyOn && activeTab !== 'notes' && isDataUploaded && (
-          <section className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-0.5 max-w-2xl">
-              <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
-                <NotebookPen className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>{t.advancedStudyBannerTitle}</span>
+        {isAdvancedStudyOn &&
+          activeTab !== 'notes' &&
+          activeTab !== 'flashcards' &&
+          isDataUploaded && (
+            <section className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-0.5 max-w-xl">
+                <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                  <NotebookPen className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>{t.advancedStudyBannerTitle}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-amber-800 leading-relaxed">
+                  {t.advancedStudyBannerDesc}
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-amber-800 leading-relaxed">
-                {t.advancedStudyBannerDesc}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('notes')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            >
-              <StickyNote className="w-4 h-4 shrink-0" />
-              <span>{t.goToNotesTabBtn}</span>
-            </button>
-          </section>
-        )}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('notes')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <StickyNote className="w-4 h-4 shrink-0" />
+                  <span>{t.goToNotesTabBtn}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('flashcards')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <Layers className="w-4 h-4 shrink-0" />
+                  <span>{t.flashcardsTabName(editionFlashcards.length)}</span>
+                </button>
+              </div>
+            </section>
+          )}
 
         {/* Active Tab Info Banner */}
         <section className="bg-white border border-slate-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-semibold text-slate-800">
             {currentTabDescription}
           </p>
-          {isDataUploaded && activeTab !== 'notes' && (
-            <button
-              type="button"
-              onClick={() => handleResetCurrentExam(false)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{t.resetBtn}</span>
-            </button>
-          )}
-          {isDataUploaded && activeTab === 'notes' && (
-            <button
-              type="button"
-              onClick={() => handleSwitchTab(1)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>{t.backToExamTabBtn}</span>
-            </button>
-          )}
+          {isDataUploaded &&
+            activeTab !== 'notes' &&
+            activeTab !== 'flashcards' && (
+              <button
+                type="button"
+                onClick={() => handleResetCurrentExam(false)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{t.resetBtn}</span>
+              </button>
+            )}
+          {isDataUploaded &&
+            (activeTab === 'notes' || activeTab === 'flashcards') && (
+              <button
+                type="button"
+                onClick={() => handleSwitchTab(1)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>{t.backToExamTabBtn}</span>
+              </button>
+            )}
         </section>
 
         {/* EMPTY STATE WHEN DATA IS NOT UPLOADED YET FOR THIS EDITION/LANGUAGE */}
@@ -974,6 +1264,18 @@ export default function App() {
               );
             })()}
           </section>
+        ) : activeTab === 'flashcards' ? (
+          /* SELF-MADE FLASHCARDS 3:2:1 REVIEW VIEW */
+          <FlashcardReviewTab
+            cards={editionFlashcards}
+            t={t}
+            isSoundMuted={isSoundMuted}
+            missedKeywordsByQuestion={missedKeywordsByQuestion}
+            onRateCard={handleRateFlashcard}
+            onDeleteCard={handleDeleteFlashcard}
+            onResetAllExposures={handleResetAllCardExposures}
+            onBackToExam={() => handleSwitchTab(1)}
+          />
         ) : (
           /* EXAM VIEW (Rounds 1~5 and Mock Exam) */
           <>
@@ -1165,72 +1467,52 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* Per-Question Study Tip Note Box (Only visible when Advanced Study is ON) */}
-                      {isAdvancedStudyOn && (() => {
-                        const isEditorOpen = Boolean(
-                          openNoteEditors[question.id]
-                        );
-                        return (
-                          <div className="mt-5 bg-amber-50/75 border border-amber-200 rounded-xl p-4 space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-900">
-                                <NotebookPen className="w-4 h-4 text-amber-800 shrink-0" />
-                                <span>{t.postGradeNoteHeader}</span>
-                                {hasSavedNote && (
-                                  <span className="ml-1 text-xs font-semibold text-emerald-700">
-                                    · {t.personalNoteSavedBadge}
-                                  </span>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => toggleNoteEditor(question.id)}
-                                className="px-3 py-1.5 rounded-lg bg-amber-200/80 hover:bg-amber-300/80 text-amber-950 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
-                              >
-                                {isEditorOpen
-                                  ? t.hideNoteEditorBtn
-                                  : t.openOrEditNoteBtn}
-                              </button>
-                            </div>
-
-                            {isEditorOpen ? (
-                              <textarea
-                                id={`note-input-${question.id}`}
-                                rows={3}
-                                value={currentNoteText}
-                                onChange={(e) =>
-                                  handleNoteChange(question.id, e.target.value)
-                                }
-                                placeholder={t.personalNotePlaceholder}
-                                className="w-full px-3.5 py-2.5 bg-white rounded-lg border border-amber-300 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/15 outline-none text-sm text-slate-900 transition-all resize-y"
-                              />
-                            ) : hasSavedNote ? (
-                              <div
-                                onClick={() => toggleNoteEditor(question.id)}
-                                title={t.openOrEditNoteBtn}
-                                className="w-full px-3.5 py-2.5 bg-white rounded-lg border border-amber-200 text-sm text-slate-800 whitespace-pre-line cursor-pointer hover:border-amber-300 transition-colors"
-                              >
-                                {currentNoteText}
-                              </div>
-                            ) : (
-                              <p className="text-xs sm:text-sm text-amber-900/80">
-                                {t.postGradeNoNoteYet}
-                              </p>
-                            )}
-
-                            <div className="flex justify-end">
-                              <button
-                                type="button"
-                                onClick={() => handleSwitchTab('notes')}
-                                className="text-xs font-bold text-amber-800 hover:text-amber-950 transition-colors cursor-pointer"
-                              >
-                                {t.goToNotesTabBtn} →
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })()}
+                      {/* Per-Question Advanced Study Tools (Mistake Tags + Red Highlighter Missed Keywords + Note + Self-Made Card Builder) */}
+                      {isAdvancedStudyOn && (
+                        <QuestionAdvancedToolbar
+                          question={question}
+                          selectedLang={selectedLang}
+                          t={t}
+                          noteText={currentNoteText}
+                          onNoteChange={(val) =>
+                            handleNoteChange(question.id, val)
+                          }
+                          isNoteEditorOpen={Boolean(
+                            openNoteEditors[question.id]
+                          )}
+                          onToggleNoteEditor={() =>
+                            toggleNoteEditor(question.id)
+                          }
+                          onGoToNotesTab={() => handleSwitchTab('notes')}
+                          questionMistakeTags={
+                            mistakeTagsByKey[
+                              getNoteKey(question.id, selectedLang)
+                            ] || []
+                          }
+                          onToggleQuestionMistakeTag={(tagId) =>
+                            handleToggleQuestionMistakeTag(question.id, tagId)
+                          }
+                          missedKeywordsCountMap={
+                            missedKeywordsByKey[
+                              getNoteKey(question.id, selectedLang)
+                            ] || {}
+                          }
+                          onClearMissedKeywords={() =>
+                            handleClearMissedKeywords(question.id)
+                          }
+                          questionFlashcards={editionFlashcards.filter(
+                            (fc) => fc.questionId === question.id
+                          )}
+                          onSaveFlashcard={(cardData) =>
+                            handleSaveFlashcard(question.id, cardData)
+                          }
+                          onDeleteFlashcard={handleDeleteFlashcard}
+                          onGoToFlashcardsTab={() =>
+                            handleSwitchTab('flashcards')
+                          }
+                          totalDeckCount={editionFlashcards.length}
+                        />
+                      )}
 
                       {/* Grading Feedback */}
                       {evaluation && (
@@ -1342,7 +1624,19 @@ export default function App() {
                                   </span>
                                 </div>
                                 <p className="text-sm font-semibold text-slate-900 whitespace-pre-line">
-                                  {pr.expectedAnswer}
+                                  {isAdvancedStudyOn
+                                    ? renderRedHighlightedText(
+                                        pr.expectedAnswer,
+                                        Object.keys(
+                                          missedKeywordsByKey[
+                                            getNoteKey(
+                                              question.id,
+                                              selectedLang
+                                            )
+                                          ] || {}
+                                        )
+                                      )
+                                    : pr.expectedAnswer}
                                 </p>
                               </div>
                             ))}
