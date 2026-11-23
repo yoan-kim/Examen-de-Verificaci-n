@@ -16,6 +16,9 @@ import { UILocalization } from '../data/examRegistry';
 
 const WORKER_SECRET_CODE = '144000';
 const TELEGRAM_BOT_TOKEN = '9161923664:AAGlBmy8mTt1Wp6O6BngDpOObhz-6ervxUU';
+// Derived from https://t.me/c/2256338393/17193 -> supergroup/channel chat_id: -1002256338393
+const TELEGRAM_DEFAULT_CHAT_ID = '-1002256338393';
+const TELEGRAM_DEFAULT_THREAD_ID = 17193;
 
 export const PRESET_WORKER_NAMES = [
   'Celeste',
@@ -388,6 +391,7 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
   scoreText,
   onClose,
 }) => {
+  const [viewMode, setViewMode] = useState<'list' | 'custom'>('list');
   const [selectedPresetName, setSelectedPresetName] = useState<string>(() => {
     try {
       return localStorage.getItem('exam_worker_preset_name') || 'Celeste';
@@ -402,13 +406,6 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
       return '';
     }
   });
-  const [manualChatId, setManualChatId] = useState<string>(() => {
-    try {
-      return localStorage.getItem('exam_telegram_manual_chat_id') || '';
-    } catch {
-      return '';
-    }
-  });
 
   const [isSending, setIsSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
@@ -416,6 +413,7 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      setViewMode('list');
       setIsSending(false);
       setSendSuccess(false);
       setSendError(null);
@@ -424,7 +422,10 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
 
   if (!isOpen) return null;
 
-  const finalWorkerName = customName.trim() || selectedPresetName.trim();
+  const finalWorkerName =
+    viewMode === 'custom'
+      ? customName.trim()
+      : selectedPresetName.trim();
   const formattedDate = formatCurrentDateWithDay(selectedLang);
   const previewMessage = t.formatTelegramPassMessage(
     finalWorkerName || '___',
@@ -435,12 +436,10 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
 
   const handleSelectPreset = (name: string) => {
     setSelectedPresetName(name);
-    setCustomName('');
     setSendError(null);
     setSendSuccess(false);
     try {
       localStorage.setItem('exam_worker_preset_name', name);
-      localStorage.setItem('exam_worker_custom_name', '');
     } catch {
       // Ignore storage errors
     }
@@ -457,15 +456,6 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
     }
   };
 
-  const handleManualChatIdChange = (val: string) => {
-    setManualChatId(val);
-    try {
-      localStorage.setItem('exam_telegram_manual_chat_id', val.trim());
-    } catch {
-      // Ignore storage errors
-    }
-  };
-
   const discoverAndSendTelegramMessage = async () => {
     if (!finalWorkerName) {
       setSendError(t.telegramNameRequiredError);
@@ -477,25 +467,43 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
     setSendSuccess(false);
 
     try {
-      const targetChatIds = new Set<string>();
-
-      if (manualChatId.trim()) {
-        targetChatIds.add(manualChatId.trim());
-      } else {
-        // 1. Check previously cached chat IDs from localStorage
-        try {
-          const cachedRaw = localStorage.getItem('exam_telegram_cached_chat_ids');
-          if (cachedRaw) {
-            const parsed: string[] = JSON.parse(cachedRaw);
-            parsed.forEach((id) => {
-              if (id) targetChatIds.add(String(id));
-            });
-          }
-        } catch {
-          // Ignore parse errors
+      const sendToChat = async (
+        chatId: string,
+        threadId?: number
+      ): Promise<boolean> => {
+        const payload: Record<string, unknown> = {
+          chat_id: chatId,
+          text: previewMessage,
+        };
+        if (threadId !== undefined) {
+          payload.message_thread_id = threadId;
         }
+        const res = await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          }
+        );
+        if (!res.ok) return false;
+        const data = await res.json();
+        return Boolean(data?.ok);
+      };
 
-        // 2. Query getUpdates from Telegram Bot API to discover active chats/groups
+      // 1. Try sending directly to the configured room (-1002256338393), first as normal message, or with thread ID 17193 if it's a forum topic
+      let sentOk = await sendToChat(TELEGRAM_DEFAULT_CHAT_ID);
+      if (!sentOk) {
+        sentOk = await sendToChat(
+          TELEGRAM_DEFAULT_CHAT_ID,
+          TELEGRAM_DEFAULT_THREAD_ID
+        );
+      }
+
+      // 2. Fallback: also check getUpdates in case the chat ID format differs
+      if (!sentOk) {
         try {
           const updatesRes = await fetch(
             `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?limit=100`
@@ -503,66 +511,30 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
           if (updatesRes.ok) {
             const updatesData = await updatesRes.json();
             if (updatesData?.ok && Array.isArray(updatesData.result)) {
+              const discoveredIds = new Set<string>();
               for (const update of updatesData.result) {
-                const chatId =
+                const cid =
                   update?.message?.chat?.id ??
                   update?.channel_post?.chat?.id ??
                   update?.my_chat_member?.chat?.id ??
                   update?.callback_query?.message?.chat?.id;
-                if (chatId !== undefined && chatId !== null) {
-                  targetChatIds.add(String(chatId));
+                if (cid !== undefined && cid !== null) {
+                  discoveredIds.add(String(cid));
+                }
+              }
+              for (const cid of Array.from(discoveredIds)) {
+                if (await sendToChat(cid)) {
+                  sentOk = true;
                 }
               }
             }
           }
         } catch {
-          // Continue with cached IDs if getUpdates network fails
+          // Ignore fallback errors
         }
       }
 
-      if (targetChatIds.size === 0) {
-        setSendError(t.telegramNoChatFoundError);
-        setIsSending(false);
-        return;
-      }
-
-      const chatIdList = Array.from(targetChatIds);
-      let anySuccess = false;
-      const successfulIds: string[] = [];
-
-      for (const chatId of chatIdList) {
-        const sendRes = await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: previewMessage,
-            }),
-          }
-        );
-
-        if (sendRes.ok) {
-          const sendData = await sendRes.json();
-          if (sendData?.ok) {
-            anySuccess = true;
-            successfulIds.push(chatId);
-          }
-        }
-      }
-
-      if (anySuccess) {
-        try {
-          localStorage.setItem(
-            'exam_telegram_cached_chat_ids',
-            JSON.stringify(successfulIds)
-          );
-        } catch {
-          // Ignore storage errors
-        }
+      if (sentOk) {
         setSendSuccess(true);
       } else {
         setSendError(t.telegramNoChatFoundError);
@@ -602,136 +574,183 @@ export const TelegramResultModal: React.FC<TelegramResultModalProps> = ({
 
         {/* Body */}
         <div className="p-6 space-y-5">
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            {t.telegramModalSubtitle}
-          </p>
+          {viewMode === 'list' ? (
+            /* STEP 1 POPUP: Preset Names Grid (including "+ 이름 직접 입력" button) -> Send Button -> Message Preview */
+            <>
+              <div className="space-y-2.5">
+                <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">
+                  <UserCheck className="w-4 h-4 text-sky-600 shrink-0" />
+                  <span>{t.telegramSelectNameLabel}</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {PRESET_WORKER_NAMES.map((name) => {
+                    const isSelected = selectedPresetName === name;
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => handleSelectPreset(name)}
+                        className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
 
-          {/* 1. Preset Names Grid */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">
-              <UserCheck className="w-4 h-4 text-sky-600 shrink-0" />
-              <span>{t.telegramSelectNameLabel}</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {PRESET_WORKER_NAMES.map((name) => {
-                const isSelected =
-                  customName.trim().length === 0 &&
-                  selectedPresetName === name;
-                return (
+                  {/* Touchable "+ 이름 직접 입력" Button right inside the name buttons grid */}
                   <button
-                    key={name}
                     type="button"
-                    onClick={() => handleSelectPreset(name)}
-                    className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
+                    onClick={() => {
+                      setViewMode('custom');
+                      setSendError(null);
+                      setSendSuccess(false);
+                    }}
+                    className="col-span-2 sm:col-span-3 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 border-dashed border-sky-300 bg-sky-50/70 text-sky-700 hover:bg-sky-100 hover:border-sky-400 transition-all cursor-pointer inline-flex items-center justify-center gap-1.5"
                   >
-                    {name}
+                    <UserPlus className="w-4 h-4 shrink-0" />
+                    <span>{t.telegramCustomNameLabel}</span>
                   </button>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+              </div>
 
-          {/* 2. Custom Name Direct Input */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="telegram-custom-worker-name"
-              className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800"
-            >
-              <UserPlus className="w-4 h-4 text-sky-600 shrink-0" />
-              <span>{t.telegramCustomNameLabel}</span>
-            </label>
-            <input
-              id="telegram-custom-worker-name"
-              type="text"
-              value={customName}
-              onChange={(e) => handleCustomNameChange(e.target.value)}
-              placeholder={t.telegramCustomNamePlaceholder}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/15 outline-none text-sm sm:text-base text-slate-900"
-            />
-          </div>
+              {/* Send Button directly below the name buttons */}
+              <button
+                type="button"
+                onClick={discoverAndSendTelegramMessage}
+                disabled={isSending}
+                className={`w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-white font-bold text-sm sm:text-base transition-colors shadow-sm ${
+                  isSending
+                    ? 'bg-sky-400 cursor-wait'
+                    : 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 cursor-pointer'
+                }`}
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                    <span>{t.telegramSendingBtn}</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5 shrink-0" />
+                    <span>{t.telegramSendConfirmBtn}</span>
+                  </>
+                )}
+              </button>
 
-          {/* 3. Live Message Preview */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1.5">
-            <div className="text-xs font-bold text-slate-500">
-              {t.telegramPreviewLabel}
-            </div>
-            <p className="text-sm sm:text-base font-bold text-slate-900 whitespace-pre-line leading-relaxed">
-              {previewMessage}
-            </p>
-          </div>
-
-          {/* Optional Manual Chat ID Collapse/Field */}
-          <div className="space-y-1">
-            <label
-              htmlFor="telegram-manual-chat-id"
-              className="block text-xs font-semibold text-slate-500"
-            >
-              {t.telegramChatTargetLabel}
-            </label>
-            <input
-              id="telegram-manual-chat-id"
-              type="text"
-              value={manualChatId}
-              onChange={(e) => handleManualChatIdChange(e.target.value)}
-              placeholder={t.telegramChatIdManualPlaceholder}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-sky-600 outline-none text-xs text-slate-700"
-            />
-            <p className="text-[11px] text-slate-400 leading-normal">
-              {t.telegramChatTargetAutoHint}
-            </p>
-          </div>
-
-          {/* Feedback Banners */}
-          {sendSuccess && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs sm:text-sm font-bold flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span>{t.telegramSendSuccessMsg}</span>
-            </div>
-          )}
-
-          {sendError && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs sm:text-sm font-semibold flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">{sendError}</span>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
-            >
-              {t.workerCodeCancelBtn}
-            </button>
-            <button
-              type="button"
-              onClick={discoverAndSendTelegramMessage}
-              disabled={isSending}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-xs sm:text-sm transition-colors shadow-sm ${
-                isSending
-                  ? 'bg-sky-400 cursor-wait'
-                  : 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 cursor-pointer'
-              }`}
-            >
-              {isSending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                  <span>{t.telegramSendingBtn}</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 shrink-0" />
-                  <span>{t.telegramSendConfirmBtn}</span>
-                </>
+              {/* Feedback Banners */}
+              {sendSuccess && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs sm:text-sm font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>{t.telegramSendSuccessMsg}</span>
+                </div>
               )}
-            </button>
-          </div>
+
+              {sendError && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs sm:text-sm font-semibold flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{sendError}</span>
+                </div>
+              )}
+
+              {/* Live Message Preview below the Send button */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1.5">
+                <div className="text-xs font-bold text-slate-500">
+                  {t.telegramPreviewLabel}
+                </div>
+                <p className="text-sm sm:text-base font-bold text-slate-900 whitespace-pre-line leading-relaxed">
+                  {previewMessage}
+                </p>
+              </div>
+            </>
+          ) : (
+            /* STEP 2 POPUP (When "+ 이름 직접 입력" is pressed): Direct Name Textbox -> Send Button -> Message Preview */
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label
+                    htmlFor="telegram-custom-worker-name"
+                    className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800"
+                  >
+                    <UserPlus className="w-4 h-4 text-sky-600 shrink-0" />
+                    <span>{t.telegramCustomNameLabel}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('list');
+                      setSendError(null);
+                      setSendSuccess(false);
+                    }}
+                    className="text-xs font-bold text-sky-700 hover:text-sky-900 transition-colors cursor-pointer"
+                  >
+                    ← {t.workerCodeCancelBtn}
+                  </button>
+                </div>
+                <input
+                  id="telegram-custom-worker-name"
+                  type="text"
+                  autoFocus
+                  value={customName}
+                  onChange={(e) => handleCustomNameChange(e.target.value)}
+                  placeholder={t.telegramCustomNamePlaceholder}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/15 outline-none text-sm sm:text-base font-semibold text-slate-900"
+                />
+              </div>
+
+              {/* Send Button directly below the custom name textbox */}
+              <button
+                type="button"
+                onClick={discoverAndSendTelegramMessage}
+                disabled={isSending}
+                className={`w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-white font-bold text-sm sm:text-base transition-colors shadow-sm ${
+                  isSending
+                    ? 'bg-sky-400 cursor-wait'
+                    : 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 cursor-pointer'
+                }`}
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                    <span>{t.telegramSendingBtn}</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5 shrink-0" />
+                    <span>{t.telegramSendConfirmBtn}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Feedback Banners */}
+              {sendSuccess && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs sm:text-sm font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>{t.telegramSendSuccessMsg}</span>
+                </div>
+              )}
+
+              {sendError && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs sm:text-sm font-semibold flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{sendError}</span>
+                </div>
+              )}
+
+              {/* Live Message Preview below the Send button */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1.5">
+                <div className="text-xs font-bold text-slate-500">
+                  {t.telegramPreviewLabel}
+                </div>
+                <p className="text-sm sm:text-base font-bold text-slate-900 whitespace-pre-line leading-relaxed">
+                  {previewMessage}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

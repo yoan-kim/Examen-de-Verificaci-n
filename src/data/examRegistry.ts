@@ -397,8 +397,8 @@ export const i18n: Record<Language, UILocalization> = {
     telegramModalTitle: '텔레그램으로 100점 통과 결과 보내기',
     telegramModalSubtitle:
       '본인의 이름을 선택하거나 직접 입력한 뒤 전송 버튼을 누르면 연결된 텔레그램 봇으로 합격 메시지가 전송됩니다.',
-    telegramSelectNameLabel: '1. 기존 이름 명단에서 선택',
-    telegramCustomNameLabel: '2. + 이름 직접 입력 (명단에 이름이 없는 경우)',
+    telegramSelectNameLabel: '이름 선택',
+    telegramCustomNameLabel: '+ 이름 직접 입력',
     telegramCustomNamePlaceholder: '이름을 직접 입력하세요...',
     telegramPreviewLabel: '전송될 텔레그램 메시지 미리보기',
     telegramChatTargetLabel: '수신 텔레그램 채팅방 설정 (자동 연결)',
@@ -629,9 +629,8 @@ export const i18n: Record<Language, UILocalization> = {
     telegramModalTitle: 'Enviar resultado de 100 puntos por Telegram',
     telegramModalSubtitle:
       'Seleccione su nombre de la lista o escríbalo directamente para enviar la notificación de aprobación por el bot de Telegram.',
-    telegramSelectNameLabel: '1. Seleccionar nombre de la lista',
-    telegramCustomNameLabel:
-      '2. + Ingresar nombre directamente (si no está en la lista)',
+    telegramSelectNameLabel: 'Seleccionar nombre',
+    telegramCustomNameLabel: '+ Ingresar nombre',
     telegramCustomNamePlaceholder: 'Escriba su nombre aquí...',
     telegramPreviewLabel: 'Vista previa del mensaje de Telegram',
     telegramChatTargetLabel: 'Chat de destino de Telegram (Conexión automática)',
