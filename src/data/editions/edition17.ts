@@ -3,7 +3,7 @@ import { ExamEdition, RoundNumber } from '../../types/exam';
 export const edition17: ExamEdition = {
   id: '17',
   editionNumber: 17,
-  isLatest: true,
+  isLatest: false,
   hidePoints: true,
   verseQuestionId: 7,
   allQuestionIds: [1, 2, 3, 4, 5, 6, 7],
@@ -14,7 +14,7 @@ export const edition17: ExamEdition = {
   },
   locales: {
     ko: {
-      editionBadge: '17차 (최신)',
+      editionBadge: '17차 (이전 차수)',
       title: '신 43년(17차) 인 맞음 확인 시험',
       subtitle: '범위: 계 1장, 핵심 성구(계 1:1, 20)',
       roundDescriptions: {
@@ -279,7 +279,7 @@ export const edition17: ExamEdition = {
 
     es: {
       isUploaded: true,
-      editionBadge: '17.º (Más reciente)',
+      editionBadge: '17.º (Anterior)',
       title: 'Examen de Verificación del Sello del Año S43 (17)',
       subtitle: 'Tema: Apocalipsis, Capítulo 1',
       roundDescriptions: {

@@ -10,6 +10,7 @@ import {
 import { edition15 } from './editions/edition15';
 import { edition16 } from './editions/edition16';
 import { edition17 } from './editions/edition17';
+import { edition18 } from './editions/edition18';
 
 /**
  * Cumulative Registry of Exam Editions.
@@ -17,6 +18,7 @@ import { edition17 } from './editions/edition17';
  * Sorted from latest to oldest so the first item is always the default latest exam.
  */
 export const EXAM_EDITIONS: ExamEdition[] = [
+  edition18,
   edition17,
   edition16,
   edition15,
@@ -357,8 +359,11 @@ export function evaluatePartAnswer(
 
   if (isExactVerse) {
     cleanedUserRaw = cleanedUserRaw
-      .replace(/^(1|3|4|18|19|20)\s*절?\s*[:.]?\s*/i, '')
-      .replace(/^vers[ií]culo\s*(1|3|4|18|19|20)\s*[:.]?\s*/i, '');
+      .replace(/^(?:계\s*\d+\s*:\s*\d+|\d+\s*절?)\s*[:.]?\s*/i, '')
+      .replace(
+        /^(?:ap(?:ocalipsis)?\s*\d+\s*:\s*\d+|vers[ií]culo\s*\d+)\s*[:.]?\s*/i,
+        ''
+      );
   }
 
   const normUser = normalizeForComparison(cleanedUserRaw);
