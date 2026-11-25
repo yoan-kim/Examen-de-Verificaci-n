@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Language } from '../types/exam';
 import { UILocalization } from '../data/examRegistry';
+
+
 import {
     appendExamResultToCentralSheet,
       CENTRAL_SPREADSHEET_URL,
@@ -23,44 +25,29 @@ import {
           ExamSlotType,
             fetchCentralRoster,
               getEcuadorDateParts,
-          import {
-              appendExamResultToCentralSheet,
-                CENTRAL_SPREADSHEET_URL,
-                  ExamCategory,
-                    ExamSlotType,
-                      fetchCentralRoster,
-                        getEcuadorDateParts,
-                          getLocalRecommendedSlot,
-                            RosterMember,
-                              TELEGRAM_BOT_TOKEN,
-                                TELEGRAM_DEFAULT_CHAT_ID,
-                                  TELEGRAM_THREAD_ID_MEAL,
-                                    TELEGRAM_THREAD_ID_SPANISH,
-                                    } from '../utils/googleSheetsLogger';
-
-                                    const WORKER_SECRET_CODE = '144000';
-                                    
-          }      getLocalRecommendedSlot,
+                getLocalRecommendedSlot,
                   RosterMember,
                     TELEGRAM_BOT_TOKEN,
                       TELEGRAM_DEFAULT_CHAT_ID,
                         TELEGRAM_THREAD_ID_MEAL,
                           TELEGRAM_THREAD_ID_SPANISH,
                           } from '../utils/googleSheetsLogger';
-                          
-                          const WORKER_SECRET_CODE = '144000';
-                          export const PRESET_WORKER_NAMES = [
-  'Celeste',
-  'Daniel',
-  'Daniela',
-  'Ernan',
-  'Joselin',
-  'Lia',
-  'Lucia',
-  'Miguel',
-  'Selina',
-].sort((a, b) => a.localeCompare(b));
 
+
+const WORKER_SECRET_CODE = '144000';
+
+export const PRESET_WORKER_NAMES = [
+  'Celeste',
+    'Daniel',
+      'Daniela',
+        'Ernan',
+          'Joselin',
+            'Lia',
+              'Lucia',
+                'Miguel',
+                  'Selina',
+                  ].sort((a, b) => a.localeCompare(b));
+                  
 interface WorkerAuthModalProps {
   isOpen: boolean;
   isUnlocked: boolean;
